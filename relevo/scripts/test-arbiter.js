@@ -153,6 +153,19 @@ console.log('\nP4 - presupuesto de transmisiones por hora');
   const out = await ar.announce({ itemId: extra.id, text: 'Pendiente 99.' });
   check(`se agota en ${cfg.maxTxPerHour}/hora`, out === 'presupuesto', `-> ${out}`);
   check('no hablo la extra', a.spoken.length === cfg.maxTxPerHour, `-> ${a.spoken.length}`);
+
+  // Lo solicitado pasa por encima del presupuesto: el relevo de turno que pidio el
+  // supervisor no puede quedar suprimido por avisos previos.
+  const sol = await ar.announce({ itemId: 'handover', text: 'Abierto 1.', solicited: true });
+  check('el relevo de turno pasa con presupuesto agotado', sol === 'hablando', `-> ${sol}`);
+  a.last.finish();
+  await new Promise((r) => setImmediate(r));
+  check('y no gasta presupuesto', ar.budgetLeft() === 0, `-> ${ar.budgetLeft()}`);
+
+  // Pero si lo apagaron, ni lo solicitado suena.
+  ar.mute('supervisor');
+  const sol2 = await ar.announce({ itemId: 'handover', text: 'Abierto 2.', solicited: true });
+  check('silenciado gana sobre solicitado', sol2 === 'silenciado', `-> ${sol2}`);
 }
 
 console.log('\nG1 - kill switch: silenciado no toma el canal, y corta lo que este sonando');

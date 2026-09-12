@@ -143,11 +143,12 @@ setInterval(async () => {
 async function doHandover() {
   const open = bitacora.openItems();
   if (open.length === 0) {
-    await arbiter.announce({ itemId: 'handover', text: 'Relevo de turno. Nada abierto.' });
+    await arbiter.announce({ itemId: 'handover', text: 'Relevo de turno. Nada abierto.', solicited: true });
     return;
   }
   for (const burst of handoverBursts(open)) {
-    await arbiter.announce({ itemId: 'handover', text: burst });
+    // solicited: el supervisor lo pidio. No gasta presupuesto de interrupcion.
+    await arbiter.announce({ itemId: 'handover', text: burst, solicited: true });
     await new Promise((r) => setTimeout(r, cfg.maxBurstMs + 400)); // rafagas separadas
   }
   log(`relevo de turno: ${Math.min(open.length, 3)} de ${open.length} al aire, resto en bitacora`);

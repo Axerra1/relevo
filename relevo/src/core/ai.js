@@ -62,10 +62,13 @@ export async function classify(text) {
 
   try {
     const p = JSON.parse(res.choices[0].message.content);
+    const subject = (p.subject || '(sin asunto)').trim();
     return {
       type: p.type || 'ruido',
       to: p.to ?? null,
-      subject: p.subject || '(sin asunto)',
+      // El modelo devuelve el asunto con mayuscula inicial inconsistente y la bitacora
+      // se va a filmar. Se normaliza aca, no en la vista.
+      subject: subject.charAt(0).toUpperCase() + subject.slice(1),
       resolvesSubject: p.resolvesSubject ?? null,
       confidence: typeof p.confidence === 'number' ? p.confidence : 0,
     };

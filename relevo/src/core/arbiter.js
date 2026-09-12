@@ -164,25 +164,31 @@ export class Arbiter extends EventEmitter {
   // ------------------------------------------------------------------ el agente
 
   /** Pide hablar. Devuelve por que no se hablo, si no se hablo. */
-  async announce({ itemId, text }) {
+  /**
+   * Pide hablar. Devuelve por que no se hablo, si no se hablo.
+   *
+   * `solicited` distingue las dos naturalezas de transmision, y la distincion importa:
+   * el presupuesto de P4 existe para limitar las interrupciones que NADIE pidio. Un relevo
+   * de turno que el supervisor pidio en voz alta no es una interrupcion, es una respuesta,
+   * y no puede quedar suprimida por dos avisos que salieron antes en la hora.
+   * Lo solicitado sigue sujeto a todo lo demas: silencio del canal, rafagas de 3s y corte.
+   */
+  async announce({ itemId, text, solicited = false }) {
     // G1: silenciado no encola ni pospone. El aviso se pierde, y eso es lo correcto.
+    // Aplica tambien a lo solicitado: si lo apagaron, esta apagado.
     if (this.muted) {
       this.emit('suppressed', { itemId, reason: 'silenciado' });
       return 'silenciado';
     }
-    if (this.budgetLeft() <= 0) {
+    if (!solicited && this.budgetLeft() <= 0) {
       this.emit('suppressed', { itemId, reason: 'presupuesto' });
       return 'presupuesto';
     }
-    if (this.adapter.floorBusy) {
-      this.#enqueue({ itemId, text });
+    if (this.adapter.floorBusy || this.state === 'speaking') {
+      this.#enqueue({ itemId, text, solicited });
       return 'encolado';
     }
-    if (this.state === 'speaking') {
-      this.#enqueue({ itemId, text });
-      return 'encolado';
-    }
-    return this.#speak({ itemId, text });
+    return this.#speak({ itemId, text, solicited });
   }
 
   #enqueue(entry) {
@@ -202,10 +208,11 @@ export class Arbiter extends EventEmitter {
     this.#speak(next);
   }
 
-  async #speak({ itemId, text }) {
+  async #speak({ itemId, text, solicited = false }) {
     this.state = 'speaking';
     const startedAt = Date.now();
-    this.txTimestamps.push(startedAt);
+    // Lo solicitado no gasta presupuesto: no es una interrupcion.
+    if (!solicited) this.txTimestamps.push(startedAt);
 
     // Se reserva el turno ANTES de sintetizar, para que un PTT humano durante el TTS
     // encuentre algo que cancelar. Sin esto el agente habla igual y no se corta.

@@ -39,15 +39,47 @@ export class PwaAdapter extends EventEmitter {
 
   async start() {
     const server = http.createServer((req, res) => {
-      const url = req.url === '/' ? '/index.html' : req.url.split('?')[0];
-      const file = path.join(WEB, path.normalize(url).replace(/^(\.\.[/\\])+/, ''));
-      if (!file.startsWith(WEB) || !fs.existsSync(file)) {
+      // La query se quita PRIMERO. "/?board=1" tiene que resolver a index.html igual que "/";
+      // si no, esto intenta leer el directorio web/ como archivo y tumba el proceso.
+      let pathname;
+      try {
+        pathname = decodeURIComponent(req.url.split('?')[0]);
+      } catch {
+        res.writeHead(400).end('no');
+        return;
+      }
+
+      let file = path.join(WEB, path.normalize(pathname).replace(/^(\.\.[/\\])+/, ''));
+      if (!file.startsWith(WEB)) {
+        res.writeHead(403).end('no');
+        return;
+      }
+
+      let st;
+      try {
+        st = fs.statSync(file);
+      } catch {
         res.writeHead(404).end('no');
         return;
       }
+      if (st.isDirectory()) {
+        file = path.join(file, 'index.html');
+        if (!fs.existsSync(file)) {
+          res.writeHead(404).end('no');
+          return;
+        }
+      }
+
       res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
-      fs.createReadStream(file).pipe(res);
+      const stream = fs.createReadStream(file);
+      // Sin esto, un error de lectura emite 'error' sin manejar y mata el servidor.
+      stream.on('error', () => {
+        res.destroy();
+      });
+      stream.pipe(res);
     });
+
+    server.on('error', (err) => console.error('servidor http:', err.message));
 
     const wss = new WebSocketServer({ server });
 
