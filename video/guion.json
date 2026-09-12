@@ -1,0 +1,55 @@
+{
+  "titulo": "Relevo · El canal que recuerda",
+  "nota": "Narracion con ElevenLabs. La voz del agente en la escena 5 es la voz REAL del producto (OpenAI TTS), no ElevenLabs. Las lineas de log en pantalla son verbatim de las pruebas del 2026-09-12 sobre Zello Work.",
+  "escenas": [
+    {
+      "id": 1,
+      "nombre": "gancho",
+      "narracion": "En obra, lo importante se dice por radio. Y se evapora en el instante en que sueltas el botón.",
+      "sfx_inicio": "ptt"
+    },
+    {
+      "id": 2,
+      "nombre": "problema",
+      "narracion": "Una petición se entierra entre la charla del canal. Nadie sabe qué quedó pendiente. Y ocho horas de operación se entregan de memoria, en un relevo de dos minutos."
+    },
+    {
+      "id": 3,
+      "nombre": "relevo",
+      "narracion": "Relevo es un participante más del canal. No tiene pantalla, no tiene app. Escucha a todos a la vez, y sostiene lo que ningún humano alcanza a retener."
+    },
+    {
+      "id": 4,
+      "nombre": "red-real",
+      "narracion": "Y no es una maqueta. Corre sobre Zello Work, una red push-to-talk real. La identidad de quien habla llega firmada por la red: nunca analizamos la voz de nadie."
+    },
+    {
+      "id": 5,
+      "nombre": "el-agente-habla",
+      "narracion": "Cuando una petición se queda sin respuesta, Relevo habla. Una sola vez, y corto.",
+      "voz_agente": "Pendiente. Material en el piso 8. Sin respuesta.",
+      "sfx_agente": "ptt"
+    },
+    {
+      "id": 6,
+      "nombre": "cierre",
+      "narracion": "Alguien contesta, aunque la transcripción no salga perfecta, y el pendiente se cierra solo. Nadie escribió una sola palabra."
+    },
+    {
+      "id": 7,
+      "nombre": "disciplina",
+      "narracion": "En una radio solo habla uno a la vez. Por eso Relevo mide cada segundo que ocupa el canal, nunca corta su propia frase, y cualquiera lo apaga diciendo: Relevo, silencio."
+    },
+    {
+      "id": 8,
+      "nombre": "relevo-de-turno",
+      "narracion": "Al cambio de turno, el supervisor pide el relevo. Y lo que antes se perdía, ahora se entrega."
+    },
+    {
+      "id": 9,
+      "nombre": "final",
+      "narracion": "Relevo. El canal que recuerda.",
+      "sfx_inicio": "ptt"
+    }
+  ]
+}
