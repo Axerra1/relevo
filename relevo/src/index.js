@@ -161,7 +161,9 @@ async function handleTransmission(userId, text) {
     if (abiertos.length) {
       const match = await matchAnswer(text, abiertos);
       if (match.itemId && match.confidence >= cfg.minConfidence) {
-        const cerrado = bitacora.close(match.itemId, { byTxId: tx.id, reason: parsed.type });
+        // La razon es "respuesta" aunque el clasificador lo etiquetara reporte: si cerro un
+        // pendiente, respondio. "cerrado (reporte)" en la bitacora confundia.
+        const cerrado = bitacora.close(match.itemId, { byTxId: tx.id, reason: 'respuesta' });
         log(`  -> cierra "${cerrado.subject}" (conf ${match.confidence}) ${match.razon}`);
         arbiter.drain();
         return;
@@ -199,14 +201,32 @@ async function doHandover() {
   const open = bitacora.openItems();
   if (open.length === 0) {
     await arbiter.announce({ itemId: 'handover', text: 'Relevo de turno. Nada abierto.', solicited: true });
+    log('relevo de turno: nada abierto');
     return;
   }
-  for (const burst of handoverBursts(open)) {
+  const rafagas = handoverBursts(open);
+  for (const burst of rafagas) {
     // solicited: el supervisor lo pidio. No gasta presupuesto de interrupcion.
     await arbiter.announce({ itemId: 'handover', text: burst, solicited: true });
-    await new Promise((r) => setTimeout(r, cfg.maxBurstMs + 400)); // rafagas separadas
+    // Se espera a que la rafaga TERMINE antes de pedir la siguiente. Con un tiempo fijo, una
+    // rafaga larga dejaba la siguiente en cola, y con tres pendientes la tercera pisaba a la
+    // segunda (la cola tiene un solo lugar): el relevo perdia un item en voz alta.
+    await esperarSilencio();
+    await new Promise((r) => setTimeout(r, 600));
   }
-  log(`relevo de turno: ${Math.min(open.length, 3)} de ${open.length} al aire, resto en bitacora`);
+  log(`relevo de turno: ${rafagas.length} de ${open.length} al aire, resto en bitacora`);
+}
+
+/** Resuelve cuando el agente no esta hablando ni tiene nada en cola. */
+function esperarSilencio(msTope = 20000) {
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    const mirar = () => {
+      if ((arbiter.state === 'idle' && !arbiter.queued) || Date.now() - t0 > msTope) return resolve();
+      setTimeout(mirar, 150);
+    };
+    mirar();
+  });
 }
 
 // ------------------------------------------------------------------- S4: etiqueta
@@ -218,10 +238,24 @@ board.on('close-item', ({ itemId, by }) => {
 
 // ------------------------------------------------------------------------ arranque
 
-arbiter.on('suppressed', ({ itemId, reason }) => log(`suprimido (${reason}): ${itemId}`));
+// Se muestra el asunto, no el id interno: estos logs se proyectan en el demo.
+arbiter.on('suppressed', ({ itemId, reason }) =>
+  log(`suprimido (${reason}): ${bitacora.get(itemId)?.subject || itemId}`),
+);
 arbiter.on('interrupted', ({ spokenMs }) => log(`cortado a los ${spokenMs}ms, esperando veredicto`));
 
-const url = await adapter.start();
+let url;
+try {
+  url = await adapter.start();
+} catch (err) {
+  console.error(`\n  No pude abrir el canal (${cfg.adapter}): ${err.message}\n`);
+  if (cfg.adapter === 'zello') {
+    console.error('  Si dice "socket disconnected before secure TLS connection", la red esta');
+    console.error('  bloqueando zellowork.io. Pasa el PC al hotspot del celular y vuelve a arrancar.');
+    console.error('  Para seguir sin Zello: CHANNEL_ADAPTER=pwa en .env\n');
+  }
+  process.exit(1);
+}
 log(`Relevo arriba. Canal: ${cfg.adapter}`);
 
 if (board === adapter) {
