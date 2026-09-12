@@ -101,8 +101,12 @@ ws.onmessage = (ev) => {
   }
   if (m.t === 'agent-muted') setMuted(m.muted);
   if (m.t === 'agent-speak') { expectAgent = true; say('RELEVO: ' + m.text); }
-  if (m.t === 'agent-stop') { if (agentAudio) { agentAudio.pause(); agentAudio = null; }
-    if (m.why === 'cortado') say('(agente cortado)'); }
+  // Solo se detiene el audio si fue un CORTE. Al terminar natural, el audio sigue hasta su
+  // ultimo sonido: pausarlo en 'fin' era lo que dejaba al agente diciendo media frase.
+  if (m.t === 'agent-stop' && m.why === 'cortado') {
+    if (agentAudio) { agentAudio.pause(); agentAudio = null; }
+    say('(agente cortado)');
+  }
   if (m.t === 'state') render(m.snapshot);
 };
 
@@ -113,7 +117,7 @@ function setMuted(on){
   el.style.cssText = 'background:#3a1210;color:#ffb3aa;border:1px solid var(--live);border-radius:5px;padding:2px 8px;font-size:11px;letter-spacing:.1em;font-weight:600';
 }
 function playAgent(buf){ if (agentAudio) agentAudio.pause();
-  agentAudio = new Audio(URL.createObjectURL(new Blob([buf], {type:'audio/mpeg'}))); agentAudio.play().catch(()=>{}); }
+  agentAudio = new Audio(URL.createObjectURL(new Blob([buf], {type:'audio/wav'}))); agentAudio.play().catch(()=>{}); }
 function playHuman(parts){ const a = new Audio(URL.createObjectURL(new Blob(parts, {type:'audio/webm'}))); a.play().catch(()=>{}); }
 
 // ------------------------------------------------------------------ radio

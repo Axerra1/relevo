@@ -174,14 +174,26 @@ Responde JSON: { "itemId": string|null, "confidence": number, "razon": string }
   }
 }
 
-/** M6 - Redaccion del aviso. Tiene que caber en 3 segundos hablados. */
+/**
+ * Quita del asunto el verbo de pedir. "Pendiente" ya dice que alguien pidio algo, asi que
+ * "Pendiente. Solicito material en el piso ocho" repite y alarga la transmision. Es la forma
+ * correcta de cumplir P1: la brevedad sale del texto, no de recortar el audio.
+ */
+export function asuntoCorto(subject) {
+  const s = String(subject || '')
+    .replace(/^(solicit\w*|necesit\w*|requier\w*|pid\w*|pedid\w*|peticion|pedido)\s+(de\s+|que\s+)?/i, '')
+    .trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : subject;
+}
+
+/** M6 - Redaccion del aviso. Corto a proposito: cada palabra ocupa el canal. */
 export function avisoText(item) {
-  return `Pendiente. ${item.subject}. Sin respuesta.`;
+  return `Pendiente. ${asuntoCorto(item.subject)}. Sin respuesta.`;
 }
 
 /** M8 - Relevo de turno: maximo 3 items, cada uno en una rafaga aparte. */
 export function handoverBursts(items) {
-  return items.slice(0, 3).map((i, n) => `Abierto ${n + 1}. ${i.subject}.`);
+  return items.slice(0, 3).map((i, n) => `Abierto ${n + 1}. ${asuntoCorto(i.subject)}.`);
 }
 
 /**

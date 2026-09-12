@@ -185,9 +185,22 @@ export class ZelloAdapter extends EventEmitter {
     const pcm = await synthesizePcm(text);
     const paquetes = pcmAOpus(pcm, { sampleRate: SAMPLE_RATE, frameMs: FRAME_MS });
 
-    // P1: tope duro de duracion. Se recorta antes de transmitir, no despues.
-    const tope = Math.max(1, Math.floor((maxMs ?? cfg.maxBurstMs) / FRAME_MS));
-    const aEnviar = paquetes.slice(0, tope);
+    // P1: el mensaje se envia COMPLETO. Nunca se recorta el audio.
+    //
+    // La primera version recortaba a maxMs y el agente decia media frase y se callaba:
+    // sonaba roto y encima igual habia ocupado el canal. Lo que protege una emergencia no
+    // es un reloj que corta a ciegas, es que el agente se calle en el acto cuando un humano
+    // aprieta PTT (eso es abort, y sigue intacto). La brevedad se consigue escribiendo el
+    // mensaje corto, no mutilando el sonido.
+    //
+    // Solo queda una guarda contra un audio desbocado, muy por encima de cualquier aviso.
+    const objetivo = maxMs ?? cfg.maxBurstMs;
+    const duracion = paquetes.length * FRAME_MS;
+    if (duracion > objetivo) {
+      console.warn(`Zello: "${text}" dura ${duracion}ms, mas que el objetivo de ${objetivo}ms. Acorta el texto.`);
+    }
+    const desbocado = Math.max(1, Math.floor((objetivo * 3) / FRAME_MS));
+    const aEnviar = paquetes.slice(0, desbocado);
 
     const res = await this.#enviarEsperando({
       command: 'start_stream',

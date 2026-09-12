@@ -6,7 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { cfg } from '../config.js';
-import { synthesize } from '../core/ai.js';
+import { synthesizePcm } from '../core/ai.js';
+import { pcmAWav, SAMPLE_RATE } from '../core/opus.js';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
@@ -230,16 +231,25 @@ export class PwaAdapter extends EventEmitter {
    * La duracion se estima del texto y se topa en maxMs (P1).
    */
   async speak(text, { maxMs } = {}) {
-    const mp3 = await synthesize(text);
+    // PCM en vez de MP3: asi la duracion es exacta, no una estimacion por largo de texto.
+    // La version anterior estimaba, se quedaba corta, y pausaba el audio a mitad de frase.
+    const pcm = await synthesizePcm(text);
+    const duracionMs = Math.round((pcm.length / (SAMPLE_RATE * 2)) * 1000); // 16 bits mono
+    const wav = pcmAWav(pcm, SAMPLE_RATE);
     const id = Math.random().toString(36).slice(2);
 
+    const objetivo = maxMs ?? cfg.maxBurstMs;
+    if (duracionMs > objetivo) {
+      console.warn(`PWA: "${text}" dura ${duracionMs}ms, mas que el objetivo de ${objetivo}ms. Acorta el texto.`);
+    }
+
     this.#send({ t: 'agent-speak', id, text });
-    for (const ws of this.radios) if (ws.readyState === 1) ws.send(mp3, { binary: true });
+    for (const ws of this.radios) if (ws.readyState === 1) ws.send(wav, { binary: true });
 
     let settle;
     const done = new Promise((r) => (settle = r));
-    const estMs = Math.min(maxMs ?? cfg.maxBurstMs, 350 + text.length * 62);
-    const timer = setTimeout(() => finish('fin'), estMs);
+    // Termina cuando termina el audio de verdad, con un margen para la red y el buffer.
+    const timer = setTimeout(() => finish('fin'), duracionMs + 250);
 
     const finish = (why) => {
       clearTimeout(timer);

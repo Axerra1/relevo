@@ -6,12 +6,24 @@ import { transcribe, classify, answersItem, matchAnswer, avisoText, handoverBurs
 assertKey();
 
 const { PwaAdapter } = await import('./adapters/pwa.js');
+
+/**
+ * `adapter` es el canal: de ahi salen tx-start y tx-end, y ahi habla el agente.
+ * `board` sirve solo la bitacora en pantalla.
+ *
+ * Con la PWA son el mismo objeto. Con Zello no: Zello es el canal y no tiene pantalla, asi
+ * que se levanta una PWA aparte unicamente para mostrar el estado. Esa PWA no es canal: sus
+ * eventos de radio no se escuchan, solo los de bitacora (inyectar, cerrar a mano).
+ */
 let adapter;
+let board;
 if (cfg.adapter === 'zello') {
   const { ZelloAdapter } = await import('./adapters/zello.js');
   adapter = new ZelloAdapter();
+  board = new PwaAdapter();
 } else {
   adapter = new PwaAdapter();
+  board = adapter;
 }
 
 const bitacora = new Bitacora();
@@ -21,8 +33,7 @@ const log = (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
 
 // ---------------------------------------------------------------- M5: pantalla
 
-const publish = () =>
-  adapter.publish?.({ ...bitacora.snapshot(), agent: { muted: arbiter.muted } });
+const publish = () => board.publish({ ...bitacora.snapshot(), agent: { muted: arbiter.muted } });
 
 bitacora.on('change', publish);
 arbiter.on('muted', ({ by }) => { log(`SILENCIADO por ${by}`); publish(); });
@@ -52,7 +63,7 @@ adapter.on('tx-end', async ({ userId, audio, mime }) => {
 
 // Camino de pruebas: inyecta texto sin grabar nada. Sirve para probar el arbitro y la
 // maquina de estados antes de tener audio. No es parte del producto.
-adapter.on('tx-text', async ({ userId, text }) => {
+board.on('tx-text', async ({ userId, text }) => {
   try {
     await handleTransmission(userId, text);
   } catch (err) {
@@ -175,7 +186,7 @@ async function doHandover() {
 
 // ------------------------------------------------------------------- S4: etiqueta
 
-adapter.on('close-item', ({ itemId, by }) => {
+board.on('close-item', ({ itemId, by }) => {
   const item = bitacora.close(itemId, { reason: 'supervisor' });
   if (item) log(`${by} cerro a mano: ${item.subject}`);
 });
@@ -186,9 +197,15 @@ arbiter.on('suppressed', ({ itemId, reason }) => log(`suprimido (${reason}): ${i
 arbiter.on('interrupted', ({ spokenMs }) => log(`cortado a los ${spokenMs}ms, esperando veredicto`));
 
 const url = await adapter.start();
-log(`Relevo arriba. Adaptador: ${cfg.adapter}`);
-if (url) {
+log(`Relevo arriba. Canal: ${cfg.adapter}`);
+
+if (board === adapter) {
   log(`Radio:    ${url}/?user=torre3`);
   log(`Bitacora: ${url}/?board=1`);
+} else {
+  // Zello es el canal: la PWA solo sirve la pantalla de la bitacora.
+  const boardUrl = await board.start();
+  log(`Canal:    Zello, "${cfg.zello.channel}"${cfg.zello.network ? ` en ${cfg.zello.network}` : ''}`);
+  log(`Bitacora: ${boardUrl}/?board=1`);
 }
 log(`umbral ${cfg.unansweredMs}ms | rafaga ${cfg.maxBurstMs}ms | ${cfg.maxTxPerHour} tx/hora | ${cfg.maxRetries} reintento`);

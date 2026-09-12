@@ -70,7 +70,10 @@ if (hablar) {
   }, 8000);
 }
 
+const argSeg = process.argv.find((a) => a.startsWith('--segundos='));
+const duracionMs = argSeg ? Number(argSeg.split('=')[1]) * 1000 : 40000;
+
 setTimeout(() => {
   console.log(`\n${el()} fin de la prueba.\n`);
   process.exit(0);
-}, hablar ? 40000 : 40000);
+}, duracionMs);

@@ -240,8 +240,10 @@ export class Arbiter extends EventEmitter {
     cur.handle = handle;
     this.emit('speaking', { itemId, text });
 
-    // P1: tope duro de duracion, por si el audio sintetizado salio mas largo.
-    const cap = setTimeout(() => handle.abort(), cfg.maxBurstMs);
+    // Guarda contra un audio desbocado, NO un recorte. Recortar a maxBurstMs dejaba al
+    // agente diciendo media frase. La brevedad se logra con el texto; lo que protege al
+    // canal es el corte ante PTT humano (onHumanFloorOpen), no este reloj.
+    const cap = setTimeout(() => handle.abort(), cfg.maxBurstMs * 3);
 
     handle.done
       .then(() => {
