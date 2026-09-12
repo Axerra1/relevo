@@ -1,5 +1,9 @@
 node_modules/
-.env
+certs/
 *.log
 *.err
-certs/
+
+# Credenciales. .env.example SI se versiona: es la plantilla.
+.env
+.env.bak
+.env.local

@@ -189,14 +189,22 @@ export function handoverBursts(items) {
  * P3: el agente no suena seguro cuando no lo esta, y por eso nunca sintetiza un item
  * que no haya pasado el umbral de confianza (eso lo garantiza state.js).
  */
-export async function synthesize(text) {
+export async function synthesize(text, formato = 'mp3') {
   const res = await client.audio.speech.create({
     model: cfg.tts,
     voice: cfg.voice,
     input: text,
     instructions:
       'Despachador de radio. Plano, rapido, sin emocion y sin cortesia. Nada de saludos.',
-    response_format: 'mp3',
+    response_format: formato,
   });
   return Buffer.from(await res.arrayBuffer());
+}
+
+/**
+ * Igual, pero en PCM crudo de 24 kHz, 16 bits, mono. Es lo que necesita el canal de Zello:
+ * pedirlo en pcm evita tener que decodificar un MP3 antes de codificar a Opus.
+ */
+export function synthesizePcm(text) {
+  return synthesize(text, 'pcm');
 }

@@ -32,6 +32,8 @@ export const cfg = {
 
   zello: {
     ws: process.env.ZELLO_WS || 'wss://zello.io/ws',
+    // Si network esta puesto, es Zello Work y la URL se arma con la red.
+    network: process.env.ZELLO_NETWORK || '',
     token: process.env.ZELLO_TOKEN || '',
     username: process.env.ZELLO_USERNAME || '',
     password: process.env.ZELLO_PASSWORD || '',

@@ -175,9 +175,23 @@ Construido en el hackathon AI Tinkerers "Agents, Everywhere", 12 de septiembre d
 bitácora, el aviso de petición sin respuesta, la disciplina de canal con corte en seco, el
 veredicto de interrupción con reintento único, y el relevo de turno por voz.
 
-**No funciona:** el adaptador de Zello no se probó nunca contra un canal real y le falta el
-transcodificado a Opus. Está en el repo como contrato y handshake, marcado como no
-verificado en su encabezado.
+**El adaptador de Zello, con precisión.** Lo que está verificado y lo que no:
+
+| Pieza | Estado |
+|---|---|
+| Codec Opus en las dos direcciones | **Verificado.** Ida y vuelta de PCM a Opus a WAV sin pérdida de paquetes |
+| Formato del paquete binario | **Verificado** contra la especificación: `type(8)=0x01, stream_id(32BE), packet_id(32BE)` |
+| `codec_header` | **Verificado.** `sample_rate(16LE), frames_per_packet(8), frame_size_ms(8)` |
+| Conexión y `logon` | **Verificado:** el servidor respondió al protocolo |
+| Audio fluyendo por un canal real | **NO verificado** |
+
+Lo último no se pudo probar por la red del sitio, no por el código: en la red con internet
+`zellowork.io` está bloqueado, y en la red donde no lo está no había internet. Las credenciales
+de Zello Work no se pudieron ejercitar.
+
+Detalle que vale la pena: en este adaptador el corte a mitad de palabra es **literal**. Los
+paquetes se pulsan al ritmo real del audio, uno cada 60 ms, así que abortar es dejar de enviar
+y los paquetes que no salieron no existen. No es pausar un audio que ya viajó.
 
 **Fuera de alcance a propósito**, y por qué:
 
