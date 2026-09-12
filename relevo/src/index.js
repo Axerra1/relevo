@@ -36,6 +36,13 @@ const log = (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
 const publish = () => board.publish({ ...bitacora.snapshot(), agent: { muted: arbiter.muted } });
 
 bitacora.on('change', publish);
+
+// Una pantalla que se conecta o se recarga recibe el estado actual de inmediato. Sin esto
+// aparecia en blanco hasta el siguiente cambio, aunque la bitacora estuviera llena: al
+// recargar parecia que se habia borrado todo.
+board.on('hello', ({ role }) => {
+  if (role === 'board') publish();
+});
 arbiter.on('muted', ({ by }) => { log(`SILENCIADO por ${by}`); publish(); });
 arbiter.on('unmuted', ({ by }) => { log(`reactivado por ${by}`); publish(); });
 
@@ -81,27 +88,32 @@ async function handleTransmission(userId, text) {
   }
   log(`<${userId}> ${text}`);
 
+  // Los comandos de voz se comparan sin tildes. "Relevo" es tambien un verbo, y la
+  // transcripcion lo escribe "relevó" con frecuencia: con tildes, "Relevo, relevo de turno"
+  // llegaba como "Relevo relevó de turno" y el comando no se detectaba.
+  const t = text.normalize('NFD').replace(/\p{M}/gu, '');
+
   // G1: kill switch por voz. Se evalua ANTES que todo lo demas, porque apagar al agente
   // no puede depender de que el agente clasifique bien.
-  if (/relevo[,.\s]+(silencio|callate|apagate|apagado)/i.test(text)) {
+  if (/relevo[,.\s]+(silencio|callate|apagate|apagado)/i.test(t)) {
     arbiter.mute(userId);
     return;
   }
-  if (/relevo[,.\s]+(activo|encendido|despierta|reactivate|prendete)/i.test(text)) {
+  if (/relevo[,.\s]+(activo|encendido|despierta|reactivate|prendete)/i.test(t)) {
     arbiter.unmute(userId);
     arbiter.drain();
     return;
   }
 
   // M8: relevo de turno por comando de voz.
-  if (/relevo[,.\s]+(relevo|entrega|cambio)\s+de\s+turno/i.test(text)) {
+  if (/relevo[,.\s]+(relevo|entrega|cambio)\s+de\s+turno/i.test(t)) {
     arbiter.awaitingVerdict = null;
     await doHandover();
     return;
   }
 
   // S1: cierre por voz.
-  const cierre = text.match(/relevo[,.\s]+(cerrado|cerrar|listo)/i);
+  const cierre = t.match(/relevo[,.\s]+(cerrado|cerrar|listo)/i);
   if (cierre) {
     const open = bitacora.openItems();
     if (open.length) {
@@ -137,7 +149,14 @@ async function handleTransmission(userId, text) {
   // Camino pasivo de cierre: alguien contesto sin que el agente estuviera anunciando nada.
   // Se empareja con el modelo, no por coincidencia de texto, porque con varios pendientes
   // abiertos la coincidencia falla y el relevo de turno termina leyendo cosas ya resueltas.
-  if ((parsed.type === 'respuesta' || parsed.type === 'cierre') && parsed.confidence >= cfg.minConfidence) {
+  //
+  // Tambien entran los reportes. "Ya va subiendo el material al 8" atiende una peticion,
+  // pero se lee como parte de estado y el clasificador lo etiqueta `reporte`. Si el cierre
+  // dependiera de la etiqueta exacta, esa respuesta nunca cerraba nada. La senal real no es
+  // la etiqueta: es si la transmision corresponde a un pendiente abierto, y eso lo decide
+  // matchAnswer, que es conservador.
+  const puedeCerrar = ['respuesta', 'cierre', 'reporte'].includes(parsed.type);
+  if (puedeCerrar && parsed.confidence >= cfg.minConfidence) {
     const abiertos = bitacora.openItems().filter((i) => i.type === 'peticion');
     if (abiertos.length) {
       const match = await matchAnswer(text, abiertos);
@@ -147,10 +166,16 @@ async function handleTransmission(userId, text) {
         arbiter.drain();
         return;
       }
-      log(`  -> respuesta sin pendiente claro (conf ${match.confidence}). No cierra nada`);
+      if (parsed.type !== 'reporte') {
+        log(`  -> respuesta sin pendiente claro (conf ${match.confidence}). No cierra nada`);
+      }
     }
-    arbiter.drain();
-    return;
+    // Una respuesta sin pendiente no se registra como item: no se inventa a que respondia.
+    // Un reporte sin pendiente si: sigue abajo y queda en la bitacora como reporte.
+    if (parsed.type !== 'reporte') {
+      arbiter.drain();
+      return;
+    }
   }
 
   const item = bitacora.ingest(tx, parsed);

@@ -63,6 +63,31 @@ Entrega de turno en español, y "relay" es vocabulario de radio.
 
 ---
 
+## D8 · En una red PTT real, el agente termina y después habla el humano
+*Decidido el 2026-09-12, 15:15 -05, tras la primera prueba sobre Zello Work.*
+
+**Medido:** sobre Zello, mientras el agente transmite, el celular de un usuario normal **no
+puede tomar el canal**. El servidor arbitra el turno y rechaza el PTT. El corte a mitad de
+palabra que diseñamos (M7) y el veredicto de interrupción (M7b) nunca se disparan, porque la
+transmisión humana nunca llega.
+
+**Decidido:** se acepta. El agente completa su transmisión y la persona habla después. Es la
+etiqueta normal de radio: no se pisa una transmisión en curso.
+
+**Consecuencias, y lo que NO resuelve:**
+1. M7 y M7b siguen construidos y probados, pero solo aplican donde Relevo controla el turno
+   (el canal propio). En una red PTT real el turno no es de Relevo.
+2. La brevedad del texto pasa a ser **la única** protección contra acaparar el canal. Cada
+   aviso medido dura entre 4,6 y 5,1 segundos (ver commit del mismo día).
+3. **La objeción de seguridad de `critica.md` queda abierta sobre redes reales:** si alguien
+   necesita pedir auxilio durante esos ~5 segundos, no puede. No está resuelta, está
+   acotada por la duración del aviso.
+4. **TBD:** si Zello Work permite dar prioridad o interrupción a roles de despacho o
+   emergencia, eso cerraría el punto 3. Vía: revisar la configuración de prioridad de
+   canal en la consola de Zello Work. No verificado.
+
+---
+
 ## Conflictos registrados pero no resueltos hoy
 - **Dolor atribuible al handover:** TBD. La cifra de USD 50.000 millones de los dos researches
   está mal atribuida (ver `medicion.md` M2). Sin número defendible hasta medir en un piloto.

@@ -21,8 +21,9 @@ export async function transcribe(audioBuffer, mime = 'audio/webm') {
     model: cfg.stt,
     language: 'es',
     prompt:
-      'Radio de obra de construccion en Colombia. Jerga: torre, vaciado, formaleta, ' +
-      'retro, grua, cuadrilla, piso, sotano, HSE, novedad, copiado, QAP.',
+      'Radio de obra de construccion en Colombia. "Relevo" es el nombre del agente del ' +
+      'canal, no el verbo: "Relevo, relevo de turno", "Relevo, silencio". Jerga: torre, ' +
+      'vaciado, formaleta, retro, grua, cuadrilla, piso, sotano, HSE, novedad, copiado, QAP.',
   });
 
   return (res.text || '').trim();
@@ -147,8 +148,12 @@ export async function matchAnswer(incomingText, openItems) {
     messages: [
       {
         role: 'system',
-        content: `En un canal de radio de obra hay pendientes abiertos. Llega una transmision que
-parece una respuesta o un cierre. Decide a CUAL de los pendientes corresponde, si a alguno.
+        content: `En un canal de radio de obra hay pendientes abiertos. Llega una transmision:
+puede ser una respuesta, un cierre o un reporte de avance. Decide si ATIENDE a alguno de los
+pendientes, y a cual.
+
+Atender incluye informar que lo pedido ya se esta haciendo: "ya va subiendo", "en camino",
+"ya sale", "listo" atienden un pendiente sobre eso mismo.
 
 Responde JSON: { "itemId": string|null, "confidence": number, "razon": string }
 
