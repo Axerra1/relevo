@@ -5,8 +5,11 @@
  *   node scripts/smoke2.js
  */
 import WebSocket from 'ws';
+import { cfg } from '../src/config.js';
 
-const ws = new WebSocket('ws://localhost:8787');
+const ws = new WebSocket(`${cfg.https ? 'wss' : 'ws'}://localhost:${cfg.port}`, {
+  rejectUnauthorized: false,
+});
 const t0 = Date.now();
 const el = () => ((Date.now() - t0) / 1000).toFixed(1).padStart(5) + 's';
 const send = (o) => ws.send(JSON.stringify(o));

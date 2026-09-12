@@ -1,104 +1,125 @@
 # Cómo grabar el video de 2 minutos
 
-## Primero, el bloqueo que hay que saber
+**Lo que quieres en cámara: dos celulares sobre una mesa que se vean como radios, y la voz del
+agente saliendo de los dos altavoces.** Nada de ventanas de navegador. Si el jurado ve una
+barra de direcciones, ve una web app, y el tema del hackathon es exactamente lo contrario.
 
-El navegador **solo da acceso al micrófono en un contexto seguro**: HTTPS, o `localhost`.
+Esto ya está resuelto. Dos cosas lo hacían imposible y las dos están hechas:
 
-Eso significa que si abres `http://192.168.x.x:8787` en tu celular, Chrome te bloquea el
-micrófono y el botón de hablar no hace nada. No es un bug de Relevo, es política del navegador.
+**1 · El micrófono.** El navegador solo lo entrega en contexto seguro, así que
+`http://10.x.x.x` no sirve. Ahora Relevo sirve **HTTPS con certificado propio**, y eso sí es
+contexto seguro. Hay que aceptar la advertencia una vez por dispositivo.
 
-Por eso el plan recomendado **corre todo en el PC**, donde `localhost` sí funciona. Si quieres
-celulares de verdad, mira el último apartado.
+**2 · La barra de direcciones.** La app tiene manifest con `display: standalone`. **Instalada
+en la pantalla de inicio arranca sin barra de direcciones ni pestañas**: en pantalla no queda
+nada que delate un navegador.
 
 ---
 
-## El plan recomendado · sin software nuevo, sin riesgo
+## Preparación
 
-**Todo corre en el PC y filmas la pantalla con tu celular.**
+### 1 · El certificado y el servidor
 
-Suena rústico y es lo mejor que puedes hacer hoy, por tres razones: el micrófono funciona
-seguro, el celular captura a la vez la pantalla, tu voz en la habitación y **la voz del agente
-saliendo del parlante**, y el resultado se ve físico en vez de verse como una página web. Eso
-último juega a tu favor con el tema del hackathon.
-
-### Preparación · 10 minutos
-
-**1. Deja el servidor corriendo.**
+Ya están hechos y el servidor está corriendo en HTTPS. Si cambias de red, la IP cambia y hay
+que regenerar:
 
 ```
 cd D:\Hackaton\relevo
-npm run dev
+npm run cert
 ```
 
-**2. Baja el umbral para no esperar en cámara.** En `.env` pon `UNANSWERED_MS=12000` y
-`MAX_TX_PER_HOUR=8`, y reinicia. Doce segundos es suficiente para que se sienta el silencio
-incómodo sin que la toma se muera. El techo de 8 es para que no te quedes sin presupuesto a
-media grabación.
+Eso imprime la IP y las URLs. Si la IP cambió, actualiza `LAN_IP` en `.env` y reinicia.
 
-**3. Siembra el turno anterior.**
+### 2 · La wifi — lee esto antes de perder veinte minutos
+
+Estás en la red de la universidad. **Esas redes casi siempre tienen aislamiento de clientes**:
+el celular y el PC están en la misma wifi pero no se pueden ver entre sí. No es tu firewall
+(Node ya está permitido), es el punto de acceso.
+
+Pruébalo primero: abre `https://10.16.111.212:8787/?user=torre3` en el celular. Si carga,
+sigue. Si se queda pensando, no insistas — **usa el hotspot del celular**:
+
+1. Prende el hotspot en un celular
+2. Conecta el PC a ese hotspot
+3. `npm run cert` otra vez, porque la IP cambió
+4. Actualiza `LAN_IP` en `.env` y reinicia el servidor
+5. Conecta el segundo celular al mismo hotspot
+
+Con hotspot funciona siempre, porque la red es tuya.
+
+### 3 · Instalar la app en los celulares
+
+En cada celular, abre la URL del radio y acepta la advertencia del certificado
+(**Avanzado → Continuar**). Ya adentro:
+
+- **Android Chrome:** menú de tres puntos → *Instalar app* o *Agregar a pantalla de inicio*
+- **iPhone Safari:** compartir → *Agregar a pantalla de inicio*
+
+Ábrela desde el ícono de la pantalla de inicio, **no desde el navegador**. Ahí arranca a
+pantalla completa y se ve como un radio.
+
+Las URLs, una por celular:
+
+```
+https://10.16.111.212:8787/?user=torre3
+https://10.16.111.212:8787/?user=central
+```
+
+En el PC, la bitácora: `https://10.16.111.212:8787/?board=1`
+
+> **iPhone:** Safari es más estricto con certificados propios y el micrófono puede seguir
+> bloqueado. Si tienes Android, usa Android. Si solo hay iPhone, el plan B de abajo.
+
+### 4 · Sembrar el turno anterior
 
 ```
 npm run seed
 ```
 
-Noventa segundos. Espera a que diga `listo para grabar`.
+Noventa segundos. Espera el `listo para grabar`. Carga el turno previo a la bitácora para que
+la pantalla no salga vacía, y lo hace en modo sordo para que no salgan avisos atrasados justo
+cuando prendas la cámara.
 
-**4. Arma tres ventanas.** Mitad de arriba, dos ventanas del navegador lado a lado:
+### 5 · El encuadre
 
-- izquierda: `http://localhost:8787/?user=torre3`
-- derecha: `http://localhost:8787/?user=central`
-
-Mitad de abajo, una tercera: `http://localhost:8787/?board=1`
-
-Dale permiso de micrófono a las dos de arriba la primera vez que aprietes el botón.
-
-**5. Sube el volumen del parlante.** La voz del agente tiene que oírse fuerte, porque es el
-momento del video.
-
-**6. Apoya el celular en algo.** Horizontal, apuntando a la pantalla. No a pulso: te va a
-temblar justo en la toma buena.
-
-### Cómo se habla
-
-Mantienes apretado el botón del mouse sobre el círculo, hablas, sueltas. Igual que un radio.
-
-Las tres voces las haces tú. Cámbialas así, que es suficiente:
-
-- **TORRE 3** — más lejos del micrófono, apurado, como si estuviera cargando algo
-- **CENTRAL** — cerca del micrófono, plano, aburrido, de despachador
-- **GRÚA** — seco, cortante, pocas palabras
-
-Después de soltar, la otra ventana reproduce tu transmisión por el parlante. **Espera a que
-termine** antes de la siguiente. Eso no es un estorbo: es lo que hace que suene a canal de
-radio en la grabación.
+- Los dos celulares sobre una mesa, horizontal, **volumen al máximo**
+- Filma con un tercer celular apoyado en algo. No a pulso
+- Pon algo de obra en el plano si tienes: guantes, un casco, una cinta métrica. Un par de
+  guantes de trabajo cambia el video entero
+- La bitácora del PC entra **en corte**, no como plano principal
 
 ---
 
-## Qué grabar · los dos minutos, con reloj
+## Qué grabar · los dos minutos, en una sola toma
 
-Grábalo **de una sola toma**. No tienes tiempo de editar, y una toma continua además se ve más
-creíble. Si algo sale mal, empieza de nuevo: es más rápido que cortar.
+No hay tiempo de editar, y una toma continua se ve más creíble. Si algo sale mal, empieza de
+nuevo: es más rápido que cortar.
 
 | Tiempo | Qué pasa |
 |---|---|
-| **0:00–0:12** | Plano de la pantalla con la bitácora del turno sembrado. Dices la frase: *"la radio push-to-talk es el único canal de trabajo que todavía no tiene memoria"* |
-| **0:12–0:40** | **La petición se entierra.** TORRE 3: *"Central, necesito material en el piso 8, me copian."* Y después el canal sigue en otra cosa: GRÚA *"Pluma libre, bajando el balde."* · CENTRAL *"Grúa, QAP un minuto que estamos vaciando la placa."* · GRÚA *"Copiado, en la escucha."* Nadie contestó al 8. **Quédate callado unos segundos.** Ese silencio es el video |
-| **0:40–0:50** | **Habla el agente:** *"Pendiente. Solicita material en el piso 8. Sin respuesta."* Déjalo sonar completo |
-| **0:50–1:15** | **La toma clave.** Repite la petición con otro asunto, espera el aviso, y **aprieta el PTT mientras el agente está hablando**, contestándole: CENTRAL *"Ya va subiendo el material al 8."* Se corta a mitad de palabra. Y **no repite**. Deja dos segundos de silencio ahí. Acerca el celular a la bitácora: el ítem quedó cerrado, con la razón `interrupcion` |
-| **1:15–1:35** | **El contraste.** Otra petición, otro aviso, y esta vez lo interrumpes con algo ajeno: GRÚA *"Confirmo pluma parada por viento."* El agente **repite el mensaje completo**. Acá dices la línea que explica todo: *"no reacciona a que lo interrumpieron, reacciona a qué le dijeron"* |
-| **1:35–1:52** | **El cierre.** CENTRAL: *"Relevo, relevo de turno."* El agente transmite tres pendientes. Corte a la bitácora: transmitió tres, hay quince escritos. Dices: *"ocho horas de operación que antes se entregaban de memoria en dos minutos"* |
-| **1:52–2:00** | GRÚA: *"Relevo, silencio."* Aparece SILENCIADO. Cierras: *"y cualquiera lo apaga hablando"* |
+| **0:00–0:12** | Los dos radios en la mesa, en silencio. Dices: *"la radio push-to-talk es el único canal de trabajo que todavía no tiene memoria"* |
+| **0:12–0:40** | **La petición se entierra.** TORRE 3: *"Central, necesito material en el piso 8, me copian."* Y el canal sigue en otra cosa: *"Pluma libre, bajando el balde."* · *"Grúa, QAP un minuto que estamos vaciando la placa."* · *"Copiado, en la escucha."* Nadie contestó al 8. **Quédate callado unos segundos.** Ese silencio es el video |
+| **0:40–0:50** | **Habla el agente**, por el altavoz de los dos radios: *"Pendiente. Solicita material en el piso 8. Sin respuesta."* Déjalo sonar completo |
+| **0:50–1:15** | **La toma clave.** Otra petición, espera el aviso, y **aprieta el PTT mientras el agente habla**, contestándole: *"Ya va subiendo el material al 8."* Se corta a mitad de palabra. Y **no repite**. Dos segundos de silencio ahí. Corte a la bitácora: cerrado, razón `interrupcion` |
+| **1:15–1:35** | **El contraste.** Otra petición, otro aviso, y lo interrumpes con algo ajeno: *"Confirmo pluma parada por viento."* El agente **repite completo**. Dices: *"no reacciona a que lo interrumpieron, reacciona a qué le dijeron"* |
+| **1:35–1:52** | **El cierre.** *"Relevo, relevo de turno."* Tres pendientes al aire. Corte a la bitácora: transmitió tres, hay catorce escritos. *"Ocho horas de operación que antes se entregaban de memoria en dos minutos"* |
+| **1:52–2:00** | *"Relevo, silencio."* Aparece SILENCIADO. *"Y cualquiera lo apaga hablando"* |
 
-### Si te quedas sin tiempo
+**Si el reloj aprieta:** con `0:12–0:50` y `1:35–1:52` ya tienes el producto contado.
 
-Con **0:12–0:50** y **1:35–1:52** ya tienes el producto contado: la petición que se cae y el
-relevo de turno. Todo lo demás es refuerzo.
+**Si te sobran veinte segundos:** tapa el micrófono y habla encima del ruido. El agente no
+transmite nada y en la bitácora sale en *Requiere revisión humana*, citando lo poco que oyó. Es
+donde un juez entiende que el sistema no inventa, y vale más que dos features.
 
-### Si te sobran veinte segundos
+### Las voces
 
-Mete la toma de lo que no entendió: tapa el micrófono y habla encima del ruido. El agente no
-transmite nada y en la bitácora sale en *Requiere revisión humana*, citando lo poco que oyó.
-Es el momento donde un juez entiende que el sistema no inventa, y vale más que dos features.
+Si estás solo, las tres las haces tú y alcanza con cambiar así:
+
+- **TORRE 3** — lejos del micrófono, apurado, como si cargara algo
+- **CENTRAL** — cerca, plano, aburrido, de despachador
+- **GRÚA** — seco, cortante
+
+Si tienes a alguien, mucho mejor: una persona por radio y la toma se graba sola.
 
 ---
 
@@ -106,27 +127,22 @@ Es el momento donde un juez entiende que el sistema no inventa, y vale más que 
 
 | Síntoma | Qué es |
 |---|---|
-| El botón no hace nada | Falta el permiso de micrófono. Mira el candado en la barra de direcciones |
-| El agente nunca habla | Revisa la consola. Si dice `suprimido (presupuesto)`, sube `MAX_TX_PER_HOUR` y reinicia |
-| El agente tarda mucho | Baja `UNANSWERED_MS`. Con 12000 son doce segundos |
-| Clasificó mal una frase | Dila más corta y más directa. El clasificador es conservador a propósito: si duda, no dispara |
-| Se oye eco | Estás apretando PTT mientras la otra ventana reproduce. Espera a que termine |
+| El celular no carga la página | Aislamiento de clientes de la wifi. Usa el hotspot y regenera el certificado |
+| Carga pero el botón no hace nada | Falta el permiso de micrófono, o abriste por HTTP. Tiene que ser `https://` |
+| Se ve la barra de direcciones | La abriste desde el navegador. Ábrela desde el ícono de la pantalla de inicio |
+| El agente nunca habla | Mira la consola. Si dice `suprimido (presupuesto)`, sube `MAX_TX_PER_HOUR` y reinicia |
+| El agente tarda mucho | Baja `UNANSWERED_MS`. Está en 12000, o sea doce segundos |
+| Se oye eco | Estás apretando PTT mientras el otro radio reproduce. Espera a que termine |
+| Clasificó mal una frase | Dila más corta y directa. El clasificador es conservador: si duda, no dispara |
 
 ---
 
-## Mejora opcional · celulares de verdad
+## Plan B · si la red no coopera y no hay hotspot
 
-Se ve mucho mejor, y cuesta unos minutos más. Solo si ya tienes la toma del plan A guardada.
+Un celular como radio y **el PC como el segundo radio**, fuera del plano. Hablas por el PC en
+`https://localhost:8787/?user=central` (en `localhost` el micrófono funciona sin nada más) y el
+celular en la mesa es el que se filma: recibe, muestra quién transmite y saca la voz del agente
+por su altavoz.
 
-Para saltarte el bloqueo del micrófono en Chrome de Android:
-
-1. Averigua la IP del PC: `ipconfig`, busca *Dirección IPv4* (algo como `192.168.1.20`)
-2. En el celular, abre `chrome://flags/#unsafely-treat-insecure-origin-as-secure`
-3. Pega `http://192.168.1.20:8787` en la caja y ponlo en **Enabled**
-4. Relanza Chrome y abre `http://192.168.1.20:8787/?user=torre3`
-
-Con dos celulares y dos personas, esto es el video que quieres: dos radios sobre una mesa, y la
-voz del agente saliendo del altavoz de los dos al mismo tiempo.
-
-El PC tiene que estar en la misma red wifi, y si no conecta es el firewall de Windows pidiendo
-permiso para Node en redes privadas.
+Se pierde el plano de los dos radios, pero se conserva lo que importa: un radio físico sobre una
+mesa del que sale la voz de un agente.

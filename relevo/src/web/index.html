@@ -2,14 +2,25 @@
 <html lang="es">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Relevo</title>
+<!-- Instalado en la pantalla de inicio arranca sin barra de direcciones: deja de verse
+     como un navegador y se ve como un radio. Es lo que hace presentable el video. -->
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icono.svg" />
+<link rel="apple-touch-icon" href="icono.svg" />
+<meta name="theme-color" content="#0d1013" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Relevo" />
 <style>
   :root { --bg:#0d1013; --panel:#161b20; --line:#252d35; --fg:#e6edf3; --dim:#8b98a5;
           --live:#ff4d3d; --ok:#3fb950; --warn:#d29922; --agent:#58a6ff; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.45 ui-sans-serif,system-ui,sans-serif; }
-  header { padding:14px 18px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; }
+  header { padding:14px 18px; padding-top:calc(14px + env(safe-area-inset-top));
+           border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; }
   header b { letter-spacing:.14em; font-size:13px; text-transform:uppercase; }
   #floor { margin-left:auto; font-size:12px; color:var(--dim); font-variant-numeric:tabular-nums; }
   .live { color:var(--live); font-weight:600; }

@@ -1,0 +1,18 @@
+{
+  "name": "Relevo",
+  "short_name": "Relevo",
+  "description": "Canal de radio con memoria",
+  "start_url": "./?user=torre3",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1013",
+  "theme_color": "#0d1013",
+  "icons": [
+    {
+      "src": "icono.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

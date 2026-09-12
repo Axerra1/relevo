@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import http from 'node:http';
+import https from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,7 +39,7 @@ export class PwaAdapter extends EventEmitter {
   }
 
   async start() {
-    const server = http.createServer((req, res) => {
+    const handler = (req, res) => {
       // La query se quita PRIMERO. "/?board=1" tiene que resolver a index.html igual que "/";
       // si no, esto intenta leer el directorio web/ como archivo y tumba el proceso.
       let pathname;
@@ -77,9 +78,22 @@ export class PwaAdapter extends EventEmitter {
         res.destroy();
       });
       stream.pipe(res);
-    });
+    };
 
-    server.on('error', (err) => console.error('servidor http:', err.message));
+    let server;
+    if (cfg.https) {
+      if (!fs.existsSync(cfg.cert) || !fs.existsSync(cfg.key)) {
+        throw new Error(`HTTPS=1 pero no encuentro ${cfg.cert} o ${cfg.key}. Corre: npm run cert`);
+      }
+      server = https.createServer(
+        { cert: fs.readFileSync(cfg.cert), key: fs.readFileSync(cfg.key) },
+        handler,
+      );
+    } else {
+      server = http.createServer(handler);
+    }
+
+    server.on('error', (err) => console.error('servidor:', err.message));
 
     const wss = new WebSocketServer({ server });
 
@@ -177,8 +191,10 @@ export class PwaAdapter extends EventEmitter {
       });
     });
 
-    await new Promise((r) => server.listen(cfg.port, r));
-    return `http://localhost:${cfg.port}`;
+    await new Promise((r) => server.listen(cfg.port, '0.0.0.0', r));
+    const esquema = cfg.https ? 'https' : 'http';
+    const host = cfg.lanIp || 'localhost';
+    return `${esquema}://${host}:${cfg.port}`;
   }
 
   #relay(data, from) {

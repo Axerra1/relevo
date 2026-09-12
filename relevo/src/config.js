@@ -6,6 +6,16 @@ export const cfg = {
   adapter: process.env.CHANNEL_ADAPTER || 'pwa',
   port: num(process.env.PORT, 8787),
 
+  /**
+   * HTTPS con certificado propio. Hace falta para que el microfono funcione en un celular:
+   * el navegador solo lo entrega en contexto seguro, y http://10.x.x.x no lo es. Con esto
+   * si lo es, aunque el certificado no lo firme nadie y haya que aceptar la advertencia.
+   */
+  https: process.env.HTTPS === '1',
+  cert: process.env.CERT_FILE || 'certs/cert.pem',
+  key: process.env.KEY_FILE || 'certs/key.pem',
+  lanIp: process.env.LAN_IP || '',
+
   // M6
   unansweredMs: num(process.env.UNANSWERED_MS, 20000),
 

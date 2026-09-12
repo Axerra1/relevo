@@ -11,6 +11,7 @@
  * Lo que queda deliberadamente abierto va al final, y es lo que el relevo de turno va a leer.
  */
 import WebSocket from 'ws';
+import { cfg } from '../src/config.js';
 
 const PASO_MS = 2600; // la clasificacion tarda ~2s: no la atropelles
 const ESPERA_VENCIMIENTO_MS = 26000;
@@ -50,7 +51,10 @@ const HISTORIAL = [
   ['central', 'Almacen, quedo pendiente confirmar si llego el acero de tres octavos.'],
 ];
 
-const ws = new WebSocket('ws://localhost:8787');
+// Sigue el esquema del servidor: con HTTPS=1 hay que ir por wss, y aceptar el
+// certificado propio.
+const URL_WS = `${cfg.https ? 'wss' : 'ws'}://localhost:${cfg.port}`;
+const ws = new WebSocket(URL_WS, { rejectUnauthorized: false });
 const send = (o) => ws.send(JSON.stringify(o));
 const inject = (userId, text) => send({ t: 'inject-text', text, userId });
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
