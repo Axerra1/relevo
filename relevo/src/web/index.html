@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Relevo</title>
+<style>
+  :root { --bg:#0d1013; --panel:#161b20; --line:#252d35; --fg:#e6edf3; --dim:#8b98a5;
+          --live:#ff4d3d; --ok:#3fb950; --warn:#d29922; --agent:#58a6ff; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.45 ui-sans-serif,system-ui,sans-serif; }
+  header { padding:14px 18px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; }
+  header b { letter-spacing:.14em; font-size:13px; text-transform:uppercase; }
+  #floor { margin-left:auto; font-size:12px; color:var(--dim); font-variant-numeric:tabular-nums; }
+  .live { color:var(--live); font-weight:600; }
+  main { padding:18px; max-width:1100px; margin:0 auto; }
+
+  /* radio */
+  #ptt { width:min(76vw,300px); aspect-ratio:1; margin:6vh auto 0; display:grid; place-items:center;
+         border-radius:50%; background:var(--panel); border:3px solid var(--line);
+         font-size:17px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+         user-select:none; touch-action:none; cursor:pointer; transition:.08s; text-align:center; padding:20px; }
+  #ptt.on { background:#3a1210; border-color:var(--live); color:#ffb3aa; transform:scale(.97); }
+  #ptt.blocked { opacity:.4; }
+  #who { text-align:center; color:var(--dim); margin-top:16px; font-size:13px; }
+  #heard { text-align:center; margin-top:22px; min-height:26px; color:var(--agent); font-size:14px; }
+
+  /* bitacora */
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:820px){ .cols{ grid-template-columns:1fr; } }
+  h2 { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim);
+       margin:0 0 10px; font-weight:600; }
+  .item { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--line);
+          border-radius:8px; padding:11px 13px; margin-bottom:9px; }
+  .item.abierto { border-left-color:var(--warn); }
+  .item.cerrado { border-left-color:var(--ok); opacity:.55; }
+  .item.requiere_revision { border-left-color:var(--live); }
+  .subj { font-weight:600; }
+  .meta { font-size:12px; color:var(--dim); margin-top:3px; font-variant-numeric:tabular-nums; }
+  .cite { font-size:12px; color:var(--dim); margin-top:6px; padding-left:9px;
+          border-left:2px solid var(--line); font-style:italic; }
+  .item button { margin-top:8px; background:none; border:1px solid var(--line); color:var(--dim);
+                 border-radius:5px; padding:3px 9px; font-size:11px; cursor:pointer; }
+  #inject { margin-top:22px; display:flex; gap:8px; flex-wrap:wrap; }
+  #inject input { flex:1; min-width:240px; background:var(--panel); border:1px solid var(--line);
+                  color:var(--fg); border-radius:7px; padding:9px 11px; font:inherit; }
+  #inject button { background:var(--panel); border:1px solid var(--line); color:var(--fg);
+                   border-radius:7px; padding:9px 14px; cursor:pointer; font:inherit; }
+  .hint { color:var(--dim); font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+<header>
+  <b>Relevo</b>
+  <span id="mode" style="color:var(--dim);font-size:12px"></span>
+  <span id="muted" hidden>SILENCIADO</span>
+  <span id="floor">canal libre</span>
+</header>
+<main id="app"></main>
+
+<script>
+const q = new URLSearchParams(location.search);
+const isBoard = q.has('board');
+const userId = q.get('user') || 'torre3';
+document.getElementById('mode').textContent = isBoard ? 'bitacora' : userId;
+
+const ws = new WebSocket((location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host);
+ws.binaryType = 'arraybuffer';
+const floorEl = document.getElementById('floor');
+const app = document.getElementById('app');
+
+let expectAgent = false, agentAudio = null, humanChunks = [];
+
+ws.onopen = () => ws.send(JSON.stringify({ t:'hello', userId: isBoard ? 'bitacora' : userId, role: isBoard ? 'board' : 'radio' }));
+
+ws.onmessage = (ev) => {
+  if (ev.data instanceof ArrayBuffer) {
+    if (expectAgent) { expectAgent = false; playAgent(ev.data); }
+    else humanChunks.push(ev.data);
+    return;
+  }
+  const m = JSON.parse(ev.data);
+  if (m.t === 'floor') {
+    if (m.holder) { floorEl.textContent = m.holder + ' transmitiendo'; floorEl.className = 'live'; }
+    else {
+      floorEl.textContent = 'canal libre'; floorEl.className = '';
+      if (humanChunks.length) { playHuman(humanChunks); humanChunks = []; }
+    }
+    if (!isBoard) document.getElementById('ptt')?.classList.toggle('blocked', !!m.holder && m.holder !== userId);
+  }
+  if (m.t === 'agent-muted') setMuted(m.muted);
+  if (m.t === 'agent-speak') { expectAgent = true; say('RELEVO: ' + m.text); }
+  if (m.t === 'agent-stop') { if (agentAudio) { agentAudio.pause(); agentAudio = null; }
+    if (m.why === 'cortado') say('(agente cortado)'); }
+  if (m.t === 'state') render(m.snapshot);
+};
+
+function say(t){ const el = document.getElementById('heard'); if (el) el.textContent = t; }
+function setMuted(on){
+  const el = document.getElementById('muted');
+  el.hidden = !on;
+  el.style.cssText = 'background:#3a1210;color:#ffb3aa;border:1px solid var(--live);border-radius:5px;padding:2px 8px;font-size:11px;letter-spacing:.1em;font-weight:600';
+}
+function playAgent(buf){ if (agentAudio) agentAudio.pause();
+  agentAudio = new Audio(URL.createObjectURL(new Blob([buf], {type:'audio/mpeg'}))); agentAudio.play().catch(()=>{}); }
+function playHuman(parts){ const a = new Audio(URL.createObjectURL(new Blob(parts, {type:'audio/webm'}))); a.play().catch(()=>{}); }
+
+// ------------------------------------------------------------------ radio
+if (!isBoard) {
+  app.innerHTML = '<div id="ptt">mantener<br>para hablar</div><div id="who">'+userId+'</div><div id="heard"></div>';
+  const btn = document.getElementById('ptt');
+  let rec = null, stream = null;
+
+  async function down(e){
+    e.preventDefault();
+    if (btn.classList.contains('blocked') || rec) return;
+    if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } });
+    ws.send(JSON.stringify({ t:'tx-start' }));
+    btn.classList.add('on');
+    rec = new MediaRecorder(stream, { mimeType:'audio/webm' });
+    rec.ondataavailable = (ev) => { if (ev.data.size) ev.data.arrayBuffer().then(b => ws.readyState===1 && ws.send(b)); };
+    rec.start(220);
+  }
+  function up(e){
+    e.preventDefault();
+    if (!rec) return;
+    rec.stop(); rec = null;
+    btn.classList.remove('on');
+    setTimeout(() => ws.send(JSON.stringify({ t:'tx-end', mime:'audio/webm' })), 320);
+  }
+  btn.addEventListener('pointerdown', down);
+  btn.addEventListener('pointerup', up);
+  btn.addEventListener('pointercancel', up);
+  btn.addEventListener('pointerleave', up);
+}
+
+// --------------------------------------------------------------- bitacora
+if (isBoard) {
+  app.innerHTML = `
+    <div class="cols">
+      <div><h2>Abierto</h2><div id="open"></div>
+           <h2 style="margin-top:22px">Requiere revision humana</h2><div id="review"></div></div>
+      <div><h2>Todo el turno</h2><div id="all"></div></div>
+    </div>
+    <div id="inject">
+      <input id="txt" placeholder="Transmision de prueba, sin grabar audio" />
+      <button id="send">Enviar</button>
+      <button id="cut">Enviar interrumpiendo</button>
+    </div>
+    <div class="hint">"Enviar interrumpiendo" simula que alguien aprieta PTT mientras el agente habla: es como se prueba M7b sin micr&oacute;fono.</div>`;
+
+  const txt = document.getElementById('txt');
+  const fire = (hold) => { if (!txt.value.trim()) return;
+    ws.send(JSON.stringify({ t:'inject-text', text: txt.value.trim(), userId:'prueba', hold })); txt.value = ''; };
+  document.getElementById('send').onclick = () => fire(false);
+  document.getElementById('cut').onclick = () => fire(true);
+  txt.addEventListener('keydown', e => { if (e.key === 'Enter') fire(false); });
+}
+
+function card(i, withBtn){
+  const age = Math.round((Date.now() - i.ts)/1000);
+  return `<div class="item ${i.status}">
+    <div class="subj">${esc(i.subject)}</div>
+    <div class="meta">${esc(i.type)} &middot; ${esc(i.from)}${i.to ? ' &rarr; '+esc(i.to) : ''} &middot; hace ${age}s
+      &middot; conf ${i.confidence} &middot; ${esc(i.status)}${i.closedReason ? ' ('+esc(i.closedReason)+')' : ''}</div>
+    <div class="cite">&ldquo;${esc(i.sourceText)}&rdquo;</div>
+    ${withBtn && i.status==='abierto' ? `<button onclick="closeItem('${i.id}')">Innecesario / cerrar</button>` : ''}
+  </div>`;
+}
+function render(s){
+  setMuted(!!s.agent?.muted);
+  document.getElementById('open').innerHTML = s.open.map(i => card(i,true)).join('') || '<div class="hint">Nada abierto.</div>';
+  document.getElementById('review').innerHTML = s.review.map(i => card(i,false)).join('') || '<div class="hint">Nada pendiente de revision.</div>';
+  document.getElementById('all').innerHTML = s.all.map(i => card(i,false)).join('') || '<div class="hint">Sin transmisiones.</div>';
+}
+function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+window.closeItem = (id) => ws.send(JSON.stringify({ t:'close-item', itemId:id }));
+setInterval(() => { if (isBoard) ws.readyState===1 && 0; }, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "relevo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Agente participante en un canal de radio PTT: sostiene el estado operativo y habla solo cuando algo se esta cayendo.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node src/index.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "openai": "^4.73.0",
+    "ws": "^8.18.0"
+  }
+}
