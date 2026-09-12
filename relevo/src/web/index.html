@@ -72,10 +72,15 @@
 <script>
 const q = new URLSearchParams(location.search);
 const isBoard = q.has('board');
+// ?board=1&demo=1 muestra una historia ilustrativa de un turno completo, con cada funcion
+// etiquetada. No se conecta al servidor: la historia no se mezcla con el estado real.
+const isDemo = isBoard && q.has('demo');
 const userId = q.get('user') || 'torre3';
-document.getElementById('mode').textContent = isBoard ? 'bitacora' : userId;
+document.getElementById('mode').textContent = isDemo ? 'bitacora · demo' : isBoard ? 'bitacora' : userId;
 
-const ws = new WebSocket((location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host);
+const ws = isDemo
+  ? { send() {}, readyState: 3 }
+  : new WebSocket((location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host);
 ws.binaryType = 'arraybuffer';
 const floorEl = document.getElementById('floor');
 const app = document.getElementById('app');
@@ -150,7 +155,11 @@ if (!isBoard) {
 }
 
 // --------------------------------------------------------------- bitacora
-if (isBoard) {
+if (isDemo) {
+  const s = document.createElement('script');
+  s.src = 'demo.js';
+  document.body.appendChild(s);
+} else if (isBoard) {
   app.innerHTML = `
     <div class="cols">
       <div><h2>Abierto</h2><div id="open"></div>
