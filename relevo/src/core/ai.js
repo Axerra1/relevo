@@ -46,7 +46,11 @@ Campos:
 Reglas duras:
 - Si el texto llega cortado, con ruido o sin sentido, confidence BAJA. No adivines.
 - Una pregunta retorica o una queja no es peticion.
-- Nunca completes informacion que no este dicha.`;
+- Nunca completes informacion que no este dicha.
+- En radio, una transmision que empieza por "copiado", "copio", "enterado", "recibido" o
+  "QSL" es casi siempre una RESPUESTA a algo anterior, aunque despues mencione una accion.
+  "Copiado, HSE sube al 6" es respuesta, no peticion nueva.
+- Confirmar que se va a hacer algo es respuesta. Pedir que alguien lo haga es peticion.`;
 
 /** M4 - Extraccion a estado, con nivel de confianza. */
 export async function classify(text) {
@@ -116,6 +120,57 @@ Responde JSON: { "answers": boolean, "confidence": number, "razon": string }
     };
   } catch {
     return { answers: false, confidence: 0, razon: 'no parseado' };
+  }
+}
+
+/**
+ * Empareja una respuesta del canal con el pendiente que resuelve.
+ *
+ * Antes esto se hacia por coincidencia de texto, y con varios pendientes abiertos no
+ * acertaba: quedaban abiertos pendientes que el canal ya habia resuelto, y el relevo de
+ * turno los leia como si siguieran vivos. Es el mismo problema que `answersItem` resuelve
+ * para la interrupcion, asi que recibe el mismo trato.
+ *
+ * Devuelve { itemId: string|null, confidence }. Conservador: si duda, no cierra nada.
+ */
+export async function matchAnswer(incomingText, openItems) {
+  if (openItems.length === 0) return { itemId: null, confidence: 0 };
+
+  const lista = openItems
+    .map((i, n) => `${n + 1}. [${i.id}] "${i.subject}" (pedido por ${i.from}: "${i.sourceText}")`)
+    .join('\n');
+
+  const res = await client.chat.completions.create({
+    model: cfg.extract,
+    response_format: { type: 'json_object' },
+    temperature: 0,
+    messages: [
+      {
+        role: 'system',
+        content: `En un canal de radio de obra hay pendientes abiertos. Llega una transmision que
+parece una respuesta o un cierre. Decide a CUAL de los pendientes corresponde, si a alguno.
+
+Responde JSON: { "itemId": string|null, "confidence": number, "razon": string }
+
+- itemId debe ser exactamente uno de los identificadores entre corchetes, o null.
+- Si la transmision no corresponde claramente a ninguno, itemId null.
+- Si podria ser varios, itemId null y confidence baja. Cerrar el pendiente equivocado es
+  peor que no cerrar ninguno.`,
+      },
+      { role: 'user', content: `PENDIENTES ABIERTOS:\n${lista}\n\nTRANSMISION: "${incomingText}"` },
+    ],
+  });
+
+  try {
+    const p = JSON.parse(res.choices[0].message.content);
+    const valido = openItems.some((i) => i.id === p.itemId);
+    return {
+      itemId: valido ? p.itemId : null,
+      confidence: typeof p.confidence === 'number' ? p.confidence : 0,
+      razon: p.razon || '',
+    };
+  } catch {
+    return { itemId: null, confidence: 0, razon: 'no parseado' };
   }
 }
 

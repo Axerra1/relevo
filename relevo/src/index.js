@@ -1,7 +1,7 @@
 import { cfg, assertKey } from './config.js';
 import { Bitacora } from './core/state.js';
 import { Arbiter } from './core/arbiter.js';
-import { transcribe, classify, answersItem, avisoText, handoverBursts } from './core/ai.js';
+import { transcribe, classify, answersItem, matchAnswer, avisoText, handoverBursts } from './core/ai.js';
 
 assertKey();
 
@@ -121,6 +121,25 @@ async function handleTransmission(userId, text) {
       return;
     }
     arbiter.awaitingVerdict = null;
+  }
+
+  // Camino pasivo de cierre: alguien contesto sin que el agente estuviera anunciando nada.
+  // Se empareja con el modelo, no por coincidencia de texto, porque con varios pendientes
+  // abiertos la coincidencia falla y el relevo de turno termina leyendo cosas ya resueltas.
+  if ((parsed.type === 'respuesta' || parsed.type === 'cierre') && parsed.confidence >= cfg.minConfidence) {
+    const abiertos = bitacora.openItems().filter((i) => i.type === 'peticion');
+    if (abiertos.length) {
+      const match = await matchAnswer(text, abiertos);
+      if (match.itemId && match.confidence >= cfg.minConfidence) {
+        const cerrado = bitacora.close(match.itemId, { byTxId: tx.id, reason: parsed.type });
+        log(`  -> cierra "${cerrado.subject}" (conf ${match.confidence}) ${match.razon}`);
+        arbiter.drain();
+        return;
+      }
+      log(`  -> respuesta sin pendiente claro (conf ${match.confidence}). No cierra nada`);
+    }
+    arbiter.drain();
+    return;
   }
 
   const item = bitacora.ingest(tx, parsed);
