@@ -38,6 +38,15 @@ export class ZelloAdapter extends EventEmitter {
     this.streams = new Map(); // stream_id entrante -> { userId, paquetes, sampleRate }
     this.holder = null;
     this.tx = null; // transmision del agente en curso
+
+    // Reconexion. En el demo del 12-sep el PC cambio de red despues de arrancar: el socket
+    // con Zello murio en silencio, no habia reconexion, y el agente quedo fuera del canal
+    // sin que nada lo avisara. Nadie oyo nada y nada llego.
+    this.conectado = false;
+    this.deseado = false; // true tras el primer logon exitoso: desde ahi se reconecta solo
+    this.intentos = 0;
+    this.latido = null;
+    this.reconexion = null;
   }
 
   get floorBusy() {
@@ -60,13 +69,28 @@ export class ZelloAdapter extends EventEmitter {
       throw new Error('Zello Work necesita ZELLO_USERNAME y ZELLO_PASSWORD');
     }
 
-    this.ws = new WebSocket(this.url);
+    // El primer intento SI lanza: index.js muestra el error y no arranca a medias.
+    await this.#conectar();
+    this.deseado = true;
+    return null; // el canal es Zello, no hay UI local que ofrecer
+  }
+
+  // --------------------------------------------------------------- conexion
+
+  async #conectar() {
+    const esWork = !!cfg.zello.network;
+    const ws = new WebSocket(this.url);
+    this.ws = ws;
+
     await new Promise((resolve, reject) => {
-      this.ws.once('open', resolve);
-      this.ws.once('error', reject);
+      ws.once('open', resolve);
+      ws.once('error', reject);
     });
 
-    this.ws.on('message', (data, isBinary) => {
+    // Un 'error' sin oyente tumba el proceso entero. Este queda siempre puesto.
+    ws.on('error', (e) => console.log(`Zello: error de socket: ${e.message}`));
+    ws.on('message', (data, isBinary) => {
+      ws.vivo = true; // cualquier trafico prueba que la conexion sigue viva
       if (isBinary) return this.#onBinary(Buffer.from(data));
       let m;
       try {
@@ -76,8 +100,10 @@ export class ZelloAdapter extends EventEmitter {
       }
       this.#onJson(m);
     });
-
-    this.ws.on('close', () => console.error('Zello: conexion cerrada'));
+    ws.on('pong', () => {
+      ws.vivo = true;
+    });
+    ws.on('close', () => this.#alCaer(ws));
 
     // `channels` es un arreglo, no una cadena. Es el error clasico con esta API.
     const logon = {
@@ -90,11 +116,82 @@ export class ZelloAdapter extends EventEmitter {
     if (cfg.zello.username) logon.username = cfg.zello.username;
     if (cfg.zello.password) logon.password = cfg.zello.password;
 
-    const res = await this.#enviarEsperando(logon);
-    if (!res.success) throw new Error(`Zello rechazo el logon: ${res.error || 'sin detalle'}`);
-    console.log(`Zello: conectado a "${cfg.zello.channel}" en ${this.url}`);
+    let res;
+    try {
+      res = await this.#enviarEsperando(logon);
+    } catch (e) {
+      ws.terminate(); // no dejar una sesion a medio abrir colgando
+      throw e;
+    }
+    if (!res.success) {
+      ws.terminate();
+      throw new Error(`Zello rechazo el logon: ${res.error || 'sin detalle'}`);
+    }
 
-    return null; // el canal es Zello, no hay UI local que ofrecer
+    this.conectado = true;
+    this.intentos = 0;
+    this.#latir(ws);
+    console.log(`Zello: conectado a "${cfg.zello.channel}" en ${this.url}`);
+  }
+
+  /**
+   * Latido. Al cambiar de red, el socket viejo puede quedar "abierto" sin llevar trafico y
+   * sin emitir 'close' durante minutos. Cada 10 s se manda un ping; si en 20 s no volvio ni
+   * pong ni ningun mensaje, la conexion esta muerta y se termina para forzar la reconexion.
+   */
+  #latir(ws) {
+    clearInterval(this.latido);
+    ws.vivo = true;
+    this.latido = setInterval(() => {
+      if (ws !== this.ws) return;
+      if (!ws.vivo) {
+        console.log('Zello: la conexion no responde, reconectando');
+        ws.terminate();
+        return;
+      }
+      ws.vivo = false;
+      try {
+        ws.ping();
+      } catch {}
+    }, 10000);
+  }
+
+  #alCaer(ws) {
+    if (ws !== this.ws) return; // un socket viejo terminando de cerrar
+    const estaba = this.conectado;
+    this.conectado = false;
+    clearInterval(this.latido);
+
+    // Nada de lo que estaba en curso sobrevive a la conexion.
+    for (const p of this.pendientes.values()) p.resolve({ success: false, error: 'conexion cerrada' });
+    this.pendientes.clear();
+    this.streams.clear();
+    if (this.tx) this.tx.cancelado = true;
+    // Si alguien estaba transmitiendo cuando cayo, su on_stream_stop no va a llegar nunca.
+    // Sin esto el canal quedaria "ocupado" para siempre y el agente no volveria a hablar.
+    if (this.holder !== null) {
+      this.holder = null;
+      this.emit('floor-free');
+    }
+
+    if (estaba) console.log('Zello: conexion perdida');
+    if (this.deseado) this.#programarReconexion();
+  }
+
+  #programarReconexion() {
+    clearTimeout(this.reconexion);
+    const espera = Math.min(30000, 1000 * 2 ** Math.min(this.intentos, 5));
+    this.intentos++;
+    console.log(`Zello: reintentando en ${Math.round(espera / 1000)} s (intento ${this.intentos})`);
+    this.reconexion = setTimeout(async () => {
+      try {
+        await this.#conectar();
+        console.log('Zello: reconectado');
+      } catch (e) {
+        console.log(`Zello: fallo la reconexion: ${e.message}`);
+        this.#programarReconexion();
+      }
+    }, espera);
   }
 
   // ------------------------------------------------------------------ protocolo
@@ -153,16 +250,16 @@ export class ZelloAdapter extends EventEmitter {
 
       const r = opusAWav(s.paquetes, { sampleRate: s.sampleRate });
       if (!r) {
-        console.error(`Zello: no pude decodificar el audio de ${s.userId}`);
+        console.log(`Zello: no pude decodificar el audio de ${s.userId}`);
         return this.emit('floor-free');
       }
-      if (r.fallidos) console.error(`Zello: ${r.fallidos} paquetes Opus ilegibles, sigo con el resto`);
+      if (r.fallidos) console.log(`Zello: ${r.fallidos} paquetes Opus ilegibles, sigo con el resto`);
       this.emit('tx-end', { userId: s.userId, audio: r.wav, mime: 'audio/wav' });
       return;
     }
 
     if (m.command === 'on_error' || m.error) {
-      console.error('Zello error:', m.error || JSON.stringify(m));
+      console.log('Zello error:', m.error || JSON.stringify(m));
     }
   }
 
@@ -182,6 +279,7 @@ export class ZelloAdapter extends EventEmitter {
    * que exige P1, y aca es literal, porque los paquetes que no se enviaron no existen.
    */
   async speak(text, { maxMs } = {}) {
+    if (!this.conectado) throw new Error('Zello desconectado: el aviso no sale');
     const pcm = await synthesizePcm(text);
     const paquetes = pcmAOpus(pcm, { sampleRate: SAMPLE_RATE, frameMs: FRAME_MS });
 

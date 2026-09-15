@@ -238,6 +238,11 @@ board.on('close-item', ({ itemId, by }) => {
 
 // ------------------------------------------------------------------------ arranque
 
+// El arbitro emite 'error' si falla el TTS o el canal al hablar. Sin oyente, un EventEmitter
+// que emite 'error' lanza la excepcion y tumba el proceso: un corte de red con OpenAI a mitad
+// de un aviso apagaba Relevo entero. Se registra y se sigue.
+arbiter.on('error', (err) => log(`no pude transmitir: ${err.message}`));
+
 // Se muestra el asunto, no el id interno: estos logs se proyectan en el demo.
 arbiter.on('suppressed', ({ itemId, reason }) =>
   log(`suprimido (${reason}): ${bitacora.get(itemId)?.subject || itemId}`),
