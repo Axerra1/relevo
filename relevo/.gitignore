@@ -13,3 +13,6 @@ datos/
 *.db
 *.db-wal
 *.db-shm
+
+# Secretos para subir a la nube. Se borra despues de importarlos.
+.env.nube

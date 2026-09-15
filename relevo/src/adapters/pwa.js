@@ -29,6 +29,17 @@ const CABECERAS = {
   'Referrer-Policy': 'same-origin',
 };
 
+/** IP real del cliente. Solo se cree la cabecera del proxy cuando de verdad hay un proxy. */
+function ipCliente(req) {
+  if (cfg.detrasDeProxy) {
+    const fly = req.headers['fly-client-ip'];
+    if (fly) return String(fly).trim();
+    const xff = req.headers['x-forwarded-for'];
+    if (xff) return String(xff).split(',')[0].trim();
+  }
+  return req.socket.remoteAddress || '';
+}
+
 function rechazarUpgrade(socket, codigo) {
   const texto = codigo === 401 ? 'Unauthorized' : 'Forbidden';
   socket.write(`HTTP/1.1 ${codigo} ${texto}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
@@ -95,7 +106,7 @@ export class PwaAdapter extends EventEmitter {
   // ---------------------------------------------------------------- api de acceso
 
   async #api(req, res, pathname) {
-    const segura = cfg.https;
+    const segura = cfg.https || cfg.detrasDeProxy;
     const json = (codigo, cuerpo, extra = {}) => {
       res.writeHead(codigo, { ...CABECERAS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra });
       res.end(JSON.stringify(cuerpo));
@@ -108,7 +119,7 @@ export class PwaAdapter extends EventEmitter {
       } catch (e) {
         return json(e.codigo || 400, { error: 'solicitud no valida' });
       }
-      const r = await this.auth.ingresar(cuerpo.correo, cuerpo.clave, req.socket.remoteAddress || '');
+      const r = await this.auth.ingresar(cuerpo.correo, cuerpo.clave, ipCliente(req));
       if (!r.ok && r.motivo === 'bloqueado') {
         return json(429, { error: 'bloqueado', esperaSeg: r.esperaSeg }, { 'Retry-After': String(r.esperaSeg) });
       }
@@ -145,6 +156,24 @@ export class PwaAdapter extends EventEmitter {
         pathname = decodeURIComponent(req.url.split('?')[0]);
       } catch {
         res.writeHead(400).end('no');
+        return;
+      }
+
+      // Chequeo de salud para la plataforma. Publico y sin datos de la operacion.
+      // Si el canal de radio esta caido responde 200 igual: reiniciar la maquina no arregla una
+      // caida de Zello (el adaptador ya se reconecta solo) y reiniciar en bucle lo empeoraria.
+      // Solo una base de datos que no responde amerita reiniciar.
+      if (pathname === '/salud') {
+        let codigo = 200;
+        const cuerpo = { ok: true, ...(this.estadoSalud?.() || {}) };
+        try {
+          this.auth.db.prepare('SELECT 1').get();
+        } catch {
+          codigo = 503;
+          cuerpo.ok = false;
+        }
+        res.writeHead(codigo, { ...CABECERAS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify(cuerpo));
         return;
       }
 
@@ -216,6 +245,7 @@ export class PwaAdapter extends EventEmitter {
     }
 
     server.on('error', (err) => console.error('servidor:', err.message));
+    this.server = server;
 
     // El WebSocket es por donde viajan los datos, asi que el candado va aca y no solo en la
     // pagina: sin sesion valida la conexion ni se abre.
@@ -368,6 +398,21 @@ export class PwaAdapter extends EventEmitter {
     const esquema = cfg.https ? 'https' : 'http';
     const host = cfg.lanIp || 'localhost';
     return `${esquema}://${host}:${cfg.port}`;
+  }
+
+  /** Apagado limpio: avisa a las pantallas y deja de aceptar conexiones. */
+  async detener() {
+    clearInterval(this.revision);
+    for (const ws of this.wss?.clients || []) ws.close(1001, 'servidor reiniciandose');
+    if (!this.server) return;
+    await new Promise((resolve) => {
+      const tope = setTimeout(resolve, 3000);
+      this.server.close(() => {
+        clearTimeout(tope);
+        resolve();
+      });
+      this.server.closeAllConnections?.();
+    });
   }
 
   #relay(data, from) {

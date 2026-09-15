@@ -80,6 +80,12 @@ export function abrirDb(archivo) {
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
 
   const actual = db.prepare('PRAGMA user_version').get().user_version;
+  // Antes de cambiar la estructura de una base que ya tiene datos, una copia. Es el momento
+  // mas riesgoso: si una migracion sale mal, se vuelve a esta copia.
+  if (archivo !== ':memory:' && actual > 0 && actual < MIGRACIONES.length) {
+    const r = respaldar(db, path.join(path.dirname(path.resolve(archivo)), 'respaldos'), { prefijo: `antes-migracion-v${actual}` });
+    console.log(`base: copia antes de migrar -> ${r}`);
+  }
   for (let v = actual; v < MIGRACIONES.length; v++) {
     db.exec('BEGIN');
     try {
@@ -92,6 +98,34 @@ export function abrirDb(archivo) {
     }
   }
   return db;
+}
+
+/**
+ * Copia consistente de la base con VACUUM INTO: se puede hacer con el servidor andando, y el
+ * resultado es un archivo SQLite normal que se abre directo.
+ *
+ * Rota solo las copias diarias (prefijo "relevo"): conserva las `conservar` mas nuevas. Las
+ * copias de antes de una migracion no se borran solas.
+ *
+ * Ojo: la copia queda en el MISMO disco que la base. Protege contra una base corrupta o un
+ * borrado por error, no contra perder el disco. Para eso hace falta sacarla a otro lugar.
+ */
+export function respaldar(db, carpeta, { prefijo = 'relevo', conservar = 7 } = {}) {
+  fs.mkdirSync(carpeta, { recursive: true });
+  const sello = new Date().toISOString().replace(/[:.]/g, '-');
+  const destino = path.join(carpeta, `${prefijo}-${sello}.db`);
+  db.exec(`VACUUM INTO '${destino.replace(/'/g, "''")}'`);
+
+  if (prefijo === 'relevo') {
+    const diarias = fs
+      .readdirSync(carpeta)
+      .filter((f) => /^relevo-.*\.db$/.test(f))
+      .sort();
+    for (const viejo of diarias.slice(0, Math.max(0, diarias.length - conservar))) {
+      fs.rmSync(path.join(carpeta, viejo), { force: true });
+    }
+  }
+  return destino;
 }
 
 /** Deja constancia de quien hizo que. Es lo que un HSE o un auditor va a pedir. */

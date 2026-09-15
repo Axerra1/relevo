@@ -1,0 +1,53 @@
+# Relevo en Fly.io
+#
+# UNA sola maquina, siempre encendida. No subir la cantidad de maquinas nunca:
+# la base es SQLite en un solo disco y el agente entra a Zello con un solo usuario.
+# Dos maquinas tendrian bases distintas y se expulsarian del canal entre si.
+
+app = "relevo-radio"        # si el nombre ya esta tomado en Fly, cambialo aca
+primary_region = "iad"      # Virginia: cerca de OpenAI. Alternativa cercana a Colombia: "mia"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# Configuracion que no es secreta. Los secretos (OpenAI, Zello) van con `fly secrets`.
+[env]
+  TZ = "America/Bogota"
+  CHANNEL_ADAPTER = "zello"
+  PORT = "8080"
+  HTTPS = "0"
+  DETRAS_DE_PROXY = "1"
+  MODO_DESARROLLO = "0"
+  DB_ARCHIVO = "/data/relevo.db"
+  SESION_HORAS = "12"
+  RETENCION_DIAS = "90"
+  # Valores de operacion real, no los de la demo
+  UNANSWERED_MS = "60000"
+  MAX_TX_PER_HOUR = "2"
+  MAX_BURST_MS = "5000"
+
+# El disco donde vive la base. Se crea una vez con:
+#   fly volumes create relevo_datos --size 1 --region iad
+[[mounts]]
+  source = "relevo_datos"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Siempre encendida: si Fly apagara la maquina por falta de visitas, el agente saldria del
+  # canal de radio y dejaria de escuchar.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/salud"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

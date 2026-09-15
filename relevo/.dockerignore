@@ -1,0 +1,16 @@
+# Nada de secretos, datos ni cosas de desarrollo dentro de la imagen.
+node_modules
+.env
+.env.*
+!.env.example
+datos
+certs
+*.log
+*.err
+scripts/test-*
+scripts/smoke*
+scripts/seed.js
+scripts/guion.md
+scripts/como-grabar.md
+scripts/demo-en-vivo.md
+scripts/lib

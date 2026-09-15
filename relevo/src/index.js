@@ -2,7 +2,8 @@ import { cfg, assertKey } from './config.js';
 import { Bitacora } from './core/state.js';
 import { Arbiter } from './core/arbiter.js';
 import { transcribe, classify, answersItem, matchAnswer, avisoText, handoverBursts } from './core/ai.js';
-import { abrirDb, auditar, purgar } from './core/db.js';
+import path from 'node:path';
+import { abrirDb, auditar, purgar, respaldar } from './core/db.js';
 import { Autenticacion } from './core/auth.js';
 
 assertKey();
@@ -17,8 +18,22 @@ const retener = () => {
   const total = r.transmisiones + r.items + r.auditoria;
   if (total) console.log(`retencion: borrados ${r.transmisiones} transmisiones, ${r.items} items y ${r.auditoria} registros de mas de ${cfg.retencionDias} dias`);
 };
+// Copia diaria de la base, junto a ella en respaldos/. Se conservan las 7 mas nuevas.
+const CARPETA_RESPALDOS = path.join(path.dirname(cfg.dbArchivo), 'respaldos');
+const respaldo = () => {
+  try {
+    console.log(`respaldo: ${respaldar(db, CARPETA_RESPALDOS)}`);
+  } catch (err) {
+    console.log(`respaldo: FALLO ${err.message}`);
+  }
+};
+
 retener();
-setInterval(retener, 86_400_000).unref();
+respaldo();
+setInterval(() => {
+  retener();
+  respaldo();
+}, 86_400_000).unref();
 
 const { PwaAdapter } = await import('./adapters/pwa.js');
 
@@ -299,9 +314,45 @@ if (!auth.hayUsuarios()) {
   console.log('\n  AVISO: no hay ningun usuario. Nadie puede ver la bitacora todavia.');
   console.log('  Crea el primero en tu propia terminal:  npm run usuario -- crear\n');
 }
-if (!cfg.https) {
+if (!cfg.https && !cfg.detrasDeProxy) {
   console.log('  AVISO: sin HTTPS la sesion viaja sin cifrar. Solo sirve en este mismo computador.');
 }
 if (cfg.modoDesarrollo) {
   console.log('  AVISO: MODO_DESARROLLO=1. Permite inyectar texto y elegir identidad. Apagalo en produccion.');
 }
+
+// ------------------------------------------------------------------ salud y apagado
+
+board.estadoSalud = () => ({
+  canal: cfg.adapter,
+  conectado: cfg.adapter === 'zello' ? !!adapter.conectado : true,
+});
+
+/**
+ * Apagado limpio. En la nube cada despliegue apaga la maquina con SIGTERM: sin esto el agente
+ * podia quedar a mitad de una transmision en el canal y la base se cerraba de golpe.
+ */
+let apagando = false;
+async function apagar(senal) {
+  if (apagando) return;
+  apagando = true;
+  log(`${senal}: apagando`);
+  const tope = setTimeout(() => {
+    console.log('apagado: se paso el tiempo, salgo igual');
+    process.exit(1);
+  }, 8000);
+  try {
+    if (arbiter.state === 'speaking') arbiter.onHumanFloorOpen(); // suelta el canal
+    if (adapter !== board) adapter.detener?.();
+    await board.detener?.();
+    db.close();
+    clearTimeout(tope);
+    log('apagado limpio');
+    process.exit(0);
+  } catch (err) {
+    console.log(`apagado: ${err.message}`);
+    process.exit(1);
+  }
+}
+process.on('SIGTERM', () => apagar('SIGTERM'));
+process.on('SIGINT', () => apagar('SIGINT'));

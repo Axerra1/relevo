@@ -18,6 +18,16 @@ export const cfg = {
    * si lo es, aunque el certificado no lo firme nadie y haya que aceptar la advertencia.
    */
   https: process.env.HTTPS === '1',
+
+  /**
+   * En la nube el HTTPS lo pone la plataforma: la app recibe HTTP por dentro. Con esto en 1:
+   *  - la cookie de sesion igual sale con Secure, porque el usuario si esta en HTTPS
+   *  - la IP del cliente se toma de la cabecera del proxy. Sin eso, todos los pedidos
+   *    parecerian venir de la misma IP (la del proxy) y 20 claves equivocadas de cualquiera
+   *    bloquearian a todo el mundo.
+   * Fuera de un proxy va en 0: ahi la cabecera la puede inventar cualquiera.
+   */
+  detrasDeProxy: process.env.DETRAS_DE_PROXY === '1',
   cert: process.env.CERT_FILE || 'certs/cert.pem',
   key: process.env.KEY_FILE || 'certs/key.pem',
   lanIp: process.env.LAN_IP || '',

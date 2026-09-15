@@ -75,6 +75,17 @@ export class ZelloAdapter extends EventEmitter {
     return null; // el canal es Zello, no hay UI local que ofrecer
   }
 
+  /** Apagado limpio: deja de reconectar, suelta el canal si estaba hablando y se desconecta. */
+  detener() {
+    this.deseado = false;
+    clearTimeout(this.reconexion);
+    clearInterval(this.latido);
+    if (this.tx) this.tx.cancelado = true;
+    try {
+      this.ws?.close(1000, 'apagado');
+    } catch {}
+  }
+
   // --------------------------------------------------------------- conexion
 
   async #conectar() {
