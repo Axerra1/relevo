@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · Relevo Radio</title>
+<meta name="theme-color" content="#07090B">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg">
+<style>
+  :root{ --canal:#07090B; --sup:#10151A; --linea:#1E272F; --hueso:#EEF3F6; --niebla:#8595A1; --rojo:#FF4D3D; --ambar:#F2A93B; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:var(--canal);color:var(--hueso);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:grid;place-items:center;padding:24px 20px}
+  main{width:100%;max-width:380px}
+  .marca{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:34px}
+  .marca svg{width:40px;height:40px}
+  .marca span{font-weight:800;font-size:15px;letter-spacing:.2em}
+  .marca b{color:var(--rojo)}
+  form{background:var(--sup);border:1px solid var(--linea);border-radius:18px;padding:28px 24px}
+  h1{font-size:22px;letter-spacing:-.01em;margin-bottom:22px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--niebla);margin:16px 0 7px}
+  input{width:100%;background:var(--canal);border:1px solid var(--linea);color:var(--hueso);border-radius:10px;padding:13px 14px;font:inherit}
+  input:focus{outline:2px solid #34414c;outline-offset:1px}
+  button{width:100%;margin-top:24px;background:var(--rojo);color:#fff;border:0;border-radius:999px;padding:14px;font:800 16px inherit;font-family:inherit;cursor:pointer}
+  button:disabled{opacity:.6;cursor:wait}
+  #error{margin-top:16px;min-height:22px;font-size:14px;color:var(--ambar)}
+  .pie{margin-top:22px;text-align:center;font-size:13px;color:var(--niebla)}
+</style>
+</head>
+<body>
+<main>
+  <div class="marca">
+    <svg viewBox="0 0 120 120" aria-hidden="true"><path d="M103.30 35 A50 50 0 1 1 35 16.70" fill="none" stroke="#EEF3F6" stroke-width="9" stroke-linecap="round" opacity=".5"/><path d="M34.02 75 A30 30 0 1 1 75 85.98" fill="none" stroke="#EEF3F6" stroke-width="9" stroke-linecap="round"/><circle cx="60" cy="60" r="13" fill="#FF4D3D"/></svg>
+    <span>RELEVO <b>RADIO</b></span>
+  </div>
+  <form id="f" novalidate>
+    <h1>Entrar a la bitácora</h1>
+    <label for="correo">Correo</label>
+    <input id="correo" name="correo" type="email" autocomplete="username" required autofocus>
+    <label for="clave">Clave</label>
+    <input id="clave" name="clave" type="password" autocomplete="current-password" required>
+    <button id="b" type="submit">Entrar</button>
+    <div id="error" role="alert"></div>
+  </form>
+  <p class="pie">¿No tienes usuario? Pídeselo al administrador de tu operación.</p>
+</main>
+<script>
+  // Solo rutas internas: evita que ?volver= mande a alguien a otro sitio despues de entrar.
+  const volverSeguro = (v) => (typeof v === 'string' && v.startsWith('/') && !v.startsWith('//') && !v.includes('\\')) ? v : '/?board=1';
+  const volver = volverSeguro(new URLSearchParams(location.search).get('volver'));
+
+  // Si ya hay sesion, no tiene sentido pedir la clave otra vez.
+  fetch('/api/sesion', { credentials: 'same-origin' }).then((r) => { if (r.ok) location.replace(volver); });
+
+  const f = document.getElementById('f');
+  const b = document.getElementById('b');
+  const error = document.getElementById('error');
+
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    error.textContent = '';
+    const correo = f.correo.value.trim();
+    const clave = f.clave.value;
+    if (!correo || !clave) { error.textContent = 'Escribe tu correo y tu clave.'; return; }
+    b.disabled = true;
+    try {
+      const r = await fetch('/api/ingresar', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ correo, clave }),
+      });
+      if (r.ok) { location.replace(volver); return; }
+      const cuerpo = await r.json().catch(() => ({}));
+      if (r.status === 429) {
+        const min = Math.max(1, Math.ceil((cuerpo.esperaSeg || 900) / 60));
+        error.textContent = `Demasiados intentos. Espera ${min} minuto${min === 1 ? '' : 's'} e inténtalo de nuevo.`;
+      } else {
+        error.textContent = 'Correo o clave incorrectos.';
+        f.clave.value = '';
+        f.clave.focus();
+      }
+    } catch {
+      error.textContent = 'No hay conexión con el servidor.';
+    } finally {
+      b.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

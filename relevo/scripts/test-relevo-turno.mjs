@@ -6,9 +6,10 @@
  *   node scripts/test-relevo-turno.mjs 8790
  */
 import WebSocket from 'ws';
+import { cookieLocal } from './lib/sesion-local.mjs';
 
 const puerto = process.argv[2] || '8790';
-const ws = new WebSocket(`wss://localhost:${puerto}`, { rejectUnauthorized: false });
+const ws = new WebSocket(`wss://localhost:${puerto}`, { rejectUnauthorized: false, headers: { Cookie: cookieLocal('prueba relevo de turno') } });
 const send = (o) => ws.send(JSON.stringify(o));
 const di = (text) => send({ t: 'inject-text', text, userId: 'torre3' });
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -7,3 +7,9 @@ certs/
 .env
 .env.bak
 .env.local
+
+# Base de datos: datos personales de los trabajadores. Nunca se versiona.
+datos/
+*.db
+*.db-wal
+*.db-shm

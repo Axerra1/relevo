@@ -12,6 +12,20 @@
  */
 import WebSocket from 'ws';
 import { cfg } from '../src/config.js';
+import { cookieLocal, servidorEnDesarrollo } from './lib/sesion-local.mjs';
+
+// La bitacora ahora pide sesion: el script entra con una sesion de servicio de 15 minutos.
+const COOKIE = cookieLocal('siembra');
+const enDesarrollo = await servidorEnDesarrollo(COOKIE);
+if (enDesarrollo === null) {
+  console.error('\n  No pude conectarme al servidor. Arrancalo primero con: npm run dev\n');
+  process.exit(1);
+}
+if (!enDesarrollo) {
+  console.error('\n  El servidor no esta en modo desarrollo, asi que no acepta texto inyectado.');
+  console.error('  Pon MODO_DESARROLLO=1 en .env y reinicia el servidor. Solo para demos.\n');
+  process.exit(1);
+}
 
 const PASO_MS = 2600; // la clasificacion tarda ~2s: no la atropelles
 const ESPERA_VENCIMIENTO_MS = 26000;
@@ -54,7 +68,7 @@ const HISTORIAL = [
 // Sigue el esquema del servidor: con HTTPS=1 hay que ir por wss, y aceptar el
 // certificado propio.
 const URL_WS = `${cfg.https ? 'wss' : 'ws'}://localhost:${cfg.port}`;
-const ws = new WebSocket(URL_WS, { rejectUnauthorized: false });
+const ws = new WebSocket(URL_WS, { rejectUnauthorized: false, headers: { Cookie: COOKIE } });
 const send = (o) => ws.send(JSON.stringify(o));
 const inject = (userId, text) => send({ t: 'inject-text', text, userId });
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
+
+// Carpeta del proyecto (relevo/). El .env se lee desde aca, se corra el comando donde se corra.
+const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+dotenv.config({ path: path.join(RAIZ, '.env') });
 
 const num = (v, d) => (v === undefined || v === '' ? d : Number(v));
 
@@ -15,6 +21,17 @@ export const cfg = {
   cert: process.env.CERT_FILE || 'certs/cert.pem',
   key: process.env.KEY_FILE || 'certs/key.pem',
   lanIp: process.env.LAN_IP || '',
+
+  // Base de datos y acceso. El archivo contiene datos personales de los trabajadores: nunca
+  // se versiona y se borra lo viejo segun la retencion.
+  // Relativo a la carpeta del proyecto, no a donde se corra el comando: si no, un script
+  // lanzado desde otra carpeta crearia una base nueva y vacia sin avisar.
+  dbArchivo: path.resolve(RAIZ, process.env.DB_ARCHIVO || 'datos/relevo.db'),
+  sesionHoras: num(process.env.SESION_HORAS, 12), // un turno
+  retencionDias: num(process.env.RETENCION_DIAS, 90), // TBD con el abogado (decision D12)
+  // Solo para desarrollo y demos: habilita inyectar texto sin microfono y elegir la identidad
+  // del radio por la URL. En produccion va en 0.
+  modoDesarrollo: process.env.MODO_DESARROLLO === '1',
 
   // M6
   unansweredMs: num(process.env.UNANSWERED_MS, 20000),

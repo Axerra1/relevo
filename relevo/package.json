@@ -5,13 +5,15 @@
   "type": "module",
   "description": "Agente participante en un canal de radio PTT: sostiene el estado operativo y habla solo cuando algo se esta cayendo.",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "scripts": {
     "dev": "node src/index.js",
     "seed": "node scripts/seed.js",
     "test": "node scripts/test-arbiter.js",
-    "cert": "node scripts/cert.js"
+    "cert": "node scripts/cert.js",
+    "usuario": "node scripts/usuario.js",
+    "test:acceso": "node scripts/test-acceso.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

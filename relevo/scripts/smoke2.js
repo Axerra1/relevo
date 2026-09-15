@@ -6,9 +6,11 @@
  */
 import WebSocket from 'ws';
 import { cfg } from '../src/config.js';
+import { cookieLocal } from './lib/sesion-local.mjs';
 
 const ws = new WebSocket(`${cfg.https ? 'wss' : 'ws'}://localhost:${cfg.port}`, {
   rejectUnauthorized: false,
+  headers: { Cookie: cookieLocal('prueba de humo') },
 });
 const t0 = Date.now();
 const el = () => ((Date.now() - t0) / 1000).toFixed(1).padStart(5) + 's';

@@ -131,6 +131,28 @@ primero y se decide si concentrar.
 
 ---
 
+## D12 · La bitácora guarda quién dijo qué, con retención y acceso controlado
+*Decidido el 2026-09-15, al construir la base de datos.*
+
+**Conflicto:** el principio P2 del PRD prohíbe *"almacenar transcripción con identidad sin
+disociar"*. Pero una bitácora que no dice quién reportó algo no le sirve al HSE en una
+investigación de accidente, que es el caso de uso que cierra la venta (CU4).
+
+**Decidido:** se guarda la identidad de red de quien habló junto al texto, con cuatro
+protecciones:
+1. **Solo con usuario y clave.** Admin y supervisor ven la bitácora; un usuario de radio no
+2. **Auditoría** de ingresos, fallos, salidas, bloqueos, cierres a mano y silencios por voz
+3. **Retención:** transmisiones, ítems resueltos y auditoría se borran pasado el plazo.
+   Los pendientes abiertos no se borran: son operación viva
+4. **El audio sigue sin guardarse nunca** (M9 intacto)
+
+**Queda abierto — TBD con el abogado:**
+- El plazo de retención. Se dejó en **90 días** como valor provisional, sin fundamento legal
+- Si la auditoría debe conservarse más tiempo que los datos operativos
+- Si P2 se reescribe o se mantiene con esta excepción documentada
+
+---
+
 ## Conflictos registrados pero no resueltos hoy
 - **Dolor atribuible al handover:** TBD. La cifra de USD 50.000 millones de los dos researches
   está mal atribuida (ver `medicion.md` M2). Sin número defendible hasta medir en un piloto.

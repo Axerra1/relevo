@@ -8,9 +8,55 @@ import { WebSocketServer } from 'ws';
 import { cfg } from '../config.js';
 import { synthesizePcm } from '../core/ai.js';
 import { pcmAWav, SAMPLE_RATE } from '../core/opus.js';
+import { auditar } from '../core/db.js';
+import { leerCookie, cookieSesion, cookieBorrada, volverSeguro } from '../core/auth.js';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web');
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+const TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+};
+
+// Lo unico que se sirve sin sesion: la pantalla de ingreso y lo que ella necesita.
+const PUBLICOS = new Set(['/login.html', '/icono.svg', '/manifest.json', '/demo.js']);
+
+const CABECERAS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'same-origin',
+};
+
+function rechazarUpgrade(socket, codigo) {
+  const texto = codigo === 401 ? 'Unauthorized' : 'Forbidden';
+  socket.write(`HTTP/1.1 ${codigo} ${texto}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+  socket.destroy();
+}
+
+function leerJson(req, limite = 4096) {
+  return new Promise((resolve, reject) => {
+    if (!String(req.headers['content-type'] || '').includes('application/json')) return reject(Object.assign(new Error('json'), { codigo: 415 }));
+    let largo = 0;
+    const partes = [];
+    req.on('data', (c) => {
+      largo += c.length;
+      if (largo > limite) {
+        reject(Object.assign(new Error('grande'), { codigo: 413 }));
+        req.destroy();
+      } else partes.push(c);
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(partes).toString('utf8') || '{}'));
+      } catch {
+        reject(Object.assign(new Error('json'), { codigo: 400 }));
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
 /**
  * Adaptador de canal propio: PTT en el navegador.
@@ -26,8 +72,15 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
  *   publish(snapshot)                           empuja la bitacora a las pantallas
  */
 export class PwaAdapter extends EventEmitter {
-  constructor() {
+  /**
+   * @param {{auth: import('../core/auth.js').Autenticacion}} opciones
+   * Sin autenticacion no arranca: la bitacora muestra lo que dicen los trabajadores.
+   */
+  constructor({ auth } = {}) {
     super();
+    if (!auth) throw new Error('PwaAdapter necesita autenticacion');
+    this.auth = auth;
+    this.wss = null;
     this.radios = new Set();
     this.boards = new Set();
     this.holder = null; // userId que tiene el canal
@@ -39,8 +92,52 @@ export class PwaAdapter extends EventEmitter {
     return this.holder !== null;
   }
 
+  // ---------------------------------------------------------------- api de acceso
+
+  async #api(req, res, pathname) {
+    const segura = cfg.https;
+    const json = (codigo, cuerpo, extra = {}) => {
+      res.writeHead(codigo, { ...CABECERAS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra });
+      res.end(JSON.stringify(cuerpo));
+    };
+
+    if (pathname === '/api/ingresar' && req.method === 'POST') {
+      let cuerpo;
+      try {
+        cuerpo = await leerJson(req);
+      } catch (e) {
+        return json(e.codigo || 400, { error: 'solicitud no valida' });
+      }
+      const r = await this.auth.ingresar(cuerpo.correo, cuerpo.clave, req.socket.remoteAddress || '');
+      if (!r.ok && r.motivo === 'bloqueado') {
+        return json(429, { error: 'bloqueado', esperaSeg: r.esperaSeg }, { 'Retry-After': String(r.esperaSeg) });
+      }
+      // Mensaje identico para correo inexistente y clave equivocada.
+      if (!r.ok) return json(401, { error: 'credenciales' });
+      return json(200, { usuario: r.usuario }, {
+        'Set-Cookie': cookieSesion(r.token, { segundos: Math.floor(this.auth.ms / 1000), segura }),
+      });
+    }
+
+    if (pathname === '/api/salir' && req.method === 'POST') {
+      const token = leerCookie(req.headers.cookie);
+      this.auth.salir(token);
+      // Las conexiones abiertas con esa sesion se cierran en el acto, no al vencer.
+      for (const ws of this.wss?.clients || []) if (ws.token === token) ws.close(4401, 'sesion cerrada');
+      return json(200, { ok: true }, { 'Set-Cookie': cookieBorrada({ segura }) });
+    }
+
+    if (pathname === '/api/sesion' && req.method === 'GET') {
+      const usuario = this.auth.validar(leerCookie(req.headers.cookie));
+      if (!usuario) return json(401, { error: 'sin sesion' });
+      return json(200, { usuario, modoDesarrollo: cfg.modoDesarrollo });
+    }
+
+    return json(404, { error: 'no existe' });
+  }
+
   async start() {
-    const handler = (req, res) => {
+    const handler = async (req, res) => {
       // La query se quita PRIMERO. "/?board=1" tiene que resolver a index.html igual que "/";
       // si no, esto intenta leer el directorio web/ como archivo y tumba el proceso.
       let pathname;
@@ -48,6 +145,26 @@ export class PwaAdapter extends EventEmitter {
         pathname = decodeURIComponent(req.url.split('?')[0]);
       } catch {
         res.writeHead(400).end('no');
+        return;
+      }
+
+      if (pathname.startsWith('/api/')) {
+        try {
+          await this.#api(req, res, pathname);
+        } catch (err) {
+          console.log('api:', err.message);
+          if (!res.headersSent) res.writeHead(500, CABECERAS).end();
+        }
+        return;
+      }
+
+      // Todo lo que no es publico pide sesion. La bitacora en modo demo no tiene datos reales
+      // y se puede mostrar sin entrar.
+      const esIndice = pathname === '/' || pathname === '/index.html';
+      const esDemo = esIndice && /[?&]demo=1/.test(req.url) && /[?&]board=1/.test(req.url);
+      if (!PUBLICOS.has(pathname) && !esDemo && !this.auth.validar(leerCookie(req.headers.cookie))) {
+        res.writeHead(302, { ...CABECERAS, Location: `/login.html?volver=${encodeURIComponent(volverSeguro(req.url))}`, 'Cache-Control': 'no-store' });
+        res.end();
         return;
       }
 
@@ -72,7 +189,11 @@ export class PwaAdapter extends EventEmitter {
         }
       }
 
-      res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
+      res.writeHead(200, {
+        ...CABECERAS,
+        'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream',
+        'Cache-Control': 'no-store',
+      });
       const stream = fs.createReadStream(file);
       // Sin esto, un error de lectura emite 'error' sin manejar y mata el servidor.
       stream.on('error', () => {
@@ -96,7 +217,37 @@ export class PwaAdapter extends EventEmitter {
 
     server.on('error', (err) => console.error('servidor:', err.message));
 
-    const wss = new WebSocketServer({ server });
+    // El WebSocket es por donde viajan los datos, asi que el candado va aca y no solo en la
+    // pagina: sin sesion valida la conexion ni se abre.
+    const wss = new WebSocketServer({ noServer: true });
+    this.wss = wss;
+
+    server.on('upgrade', (req, socket, head) => {
+      // Otra pagina abierta en el mismo navegador no puede usar la sesion de alguien para
+      // conectarse (secuestro de WebSocket entre sitios).
+      const origen = req.headers.origin;
+      if (origen) {
+        let host = null;
+        try {
+          host = new URL(origen).host;
+        } catch {}
+        if (host !== req.headers.host) return rechazarUpgrade(socket, 403);
+      }
+      const token = leerCookie(req.headers.cookie);
+      const usuario = this.auth.validar(token);
+      if (!usuario) return rechazarUpgrade(socket, 401);
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        ws.usuario = usuario;
+        ws.token = token;
+        wss.emit('connection', ws, req);
+      });
+    });
+
+    // Una conexion abierta no sobrevive a su sesion: si vence o desactivan al usuario, se cierra.
+    this.revision = setInterval(() => {
+      for (const ws of wss.clients) if (!this.auth.validar(ws.token)) ws.close(4401, 'sesion vencida');
+    }, 30_000);
+    this.revision.unref?.();
 
     wss.on('connection', (ws) => {
       ws.userId = null;
@@ -104,8 +255,8 @@ export class PwaAdapter extends EventEmitter {
 
       ws.on('message', (data, isBinary) => {
         if (isBinary) {
-          // Trozo de audio del hablante actual.
-          if (!ws.userId) return;
+          // Trozo de audio del hablante actual. Solo de un radio.
+          if (ws.role !== 'radio' || !ws.userId) return;
           const buf = this.chunks.get(ws.userId);
           if (buf) buf.push(Buffer.from(data));
           // Relay en vivo a los otros radios: asi el canal se oye como un canal.
@@ -121,13 +272,28 @@ export class PwaAdapter extends EventEmitter {
         }
 
         if (msg.t === 'hello') {
-          ws.userId = msg.userId || 'desconocido';
-          ws.role = msg.role || 'radio';
+          const quiere = msg.role === 'board' ? 'board' : 'radio';
+          const rol = ws.usuario.rol;
+          // La bitacora la ven admin y supervisor. Un usuario de radio solo habla.
+          const puede = quiere === 'board' ? rol === 'admin' || rol === 'supervisor' : true;
+          if (!puede) {
+            ws.send(JSON.stringify({ t: 'sin-permiso', role: quiere }));
+            ws.close(4403, 'sin permiso');
+            return;
+          }
+          ws.role = quiere;
+          // La identidad es la del usuario que entro, no la que diga la URL. Solo en desarrollo
+          // se puede elegir, para probar varios radios desde un mismo computador.
+          ws.userId = cfg.modoDesarrollo && msg.userId ? String(msg.userId).slice(0, 40) : ws.usuario.nombre;
           (ws.role === 'board' ? this.boards : this.radios).add(ws);
-          ws.send(JSON.stringify({ t: 'welcome', userId: ws.userId }));
+          ws.send(JSON.stringify({ t: 'welcome', userId: ws.userId, usuario: ws.usuario }));
           this.emit('hello', { userId: ws.userId, role: ws.role });
           return;
         }
+
+        if (!ws.role) return; // nada antes del saludo
+
+        if ((msg.t === 'tx-start' || msg.t === 'tx-end') && ws.role !== 'radio') return;
 
         if (msg.t === 'tx-start') {
           if (this.holder && this.holder !== ws.userId) {
@@ -158,13 +324,19 @@ export class PwaAdapter extends EventEmitter {
         }
 
         if (msg.t === 'close-item') {
-          this.emit('close-item', { itemId: msg.itemId, by: ws.userId });
+          if (ws.role !== 'board') return;
+          this.emit('close-item', { itemId: String(msg.itemId || ''), by: ws.usuario.correo });
           return;
         }
 
         // Camino de pruebas: transmision de texto, sin grabar audio. Permite probar el
-        // arbitro y la maquina de estados antes de tener microfono. No es del producto.
+        // arbitro y la maquina de estados antes de tener microfono. No es del producto:
+        // solo en modo desarrollo y solo un admin.
         if (msg.t === 'inject-text') {
+          if (!cfg.modoDesarrollo || ws.usuario.rol !== 'admin') {
+            auditar(this.auth.db, ws.usuario.correo, 'inyeccion_rechazada');
+            return;
+          }
           const who = msg.userId || ws.userId || 'prueba';
           if (msg.hold) {
             // Simula que alguien apreto PTT: dispara el corte del agente.

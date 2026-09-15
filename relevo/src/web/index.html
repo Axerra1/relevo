@@ -66,6 +66,8 @@
   <span id="mode" style="color:var(--dim);font-size:12px"></span>
   <span id="muted" hidden>SILENCIADO</span>
   <span id="floor">canal libre</span>
+  <span id="quien" style="color:var(--dim);font-size:12px"></span>
+  <button id="salir" hidden style="background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Salir</button>
 </header>
 <main id="app"></main>
 
@@ -96,6 +98,21 @@ ws.onmessage = (ev) => {
     return;
   }
   const m = JSON.parse(ev.data);
+  if (m.t === 'welcome' && m.usuario) {
+    document.getElementById('quien').textContent = m.usuario.nombre + ' · ' + m.usuario.rol;
+    document.getElementById('salir').hidden = false;
+    // El campo de inyectar texto solo sirve en modo desarrollo y a un admin: al resto no se
+    // le muestra, porque el servidor igual lo rechaza.
+    if (isBoard) fetch('/api/sesion', { credentials: 'same-origin' }).then((r) => r.json()).then((s) => {
+      if (!(s.modoDesarrollo && s.usuario?.rol === 'admin')) {
+        document.getElementById('inject')?.remove();
+        document.getElementById('inject-hint')?.remove();
+      }
+    }).catch(() => {});
+  }
+  if (m.t === 'sin-permiso') {
+    app.innerHTML = '<div class="hint" style="font-size:15px;margin-top:40px;text-align:center">Tu usuario no tiene permiso para ver la bitácora.<br>Pídeselo al administrador de tu operación.</div>';
+  }
   if (m.t === 'floor') {
     if (m.holder) { floorEl.textContent = m.holder + ' transmitiendo'; floorEl.className = 'live'; }
     else {
@@ -114,6 +131,25 @@ ws.onmessage = (ev) => {
   }
   if (m.t === 'state') render(m.snapshot);
 };
+
+// Si la conexion se cae, se averigua por que: sesion vencida o cerrada -> a entrar de nuevo;
+// cualquier otra cosa -> reintentar.
+if (!isDemo) {
+  ws.onclose = async (ev) => {
+    if (ev.code === 4403) return; // sin permiso: el mensaje ya esta en pantalla
+    const r = await fetch('/api/sesion', { credentials: 'same-origin' }).catch(() => null);
+    if (r && r.status === 401) {
+      location.replace('/login.html?volver=' + encodeURIComponent(location.pathname + location.search));
+      return;
+    }
+    floorEl.textContent = 'sin conexión, reintentando…'; floorEl.className = 'live';
+    setTimeout(() => location.reload(), 4000);
+  };
+  document.getElementById('salir').onclick = async () => {
+    await fetch('/api/salir', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+    location.replace('/login.html');
+  };
+}
 
 function say(t){ const el = document.getElementById('heard'); if (el) el.textContent = t; }
 function setMuted(on){
@@ -171,7 +207,7 @@ if (isDemo) {
       <button id="send">Enviar</button>
       <button id="cut">Enviar interrumpiendo</button>
     </div>
-    <div class="hint">"Enviar interrumpiendo" simula que alguien aprieta PTT mientras el agente habla: es como se prueba M7b sin micr&oacute;fono.</div>`;
+    <div class="hint" id="inject-hint">"Enviar interrumpiendo" simula que alguien aprieta PTT mientras el agente habla: es como se prueba M7b sin micr&oacute;fono.</div>`;
 
   const txt = document.getElementById('txt');
   const fire = (hold) => { if (!txt.value.trim()) return;

@@ -2,8 +2,23 @@ import { cfg, assertKey } from './config.js';
 import { Bitacora } from './core/state.js';
 import { Arbiter } from './core/arbiter.js';
 import { transcribe, classify, answersItem, matchAnswer, avisoText, handoverBursts } from './core/ai.js';
+import { abrirDb, auditar, purgar } from './core/db.js';
+import { Autenticacion } from './core/auth.js';
 
 assertKey();
+
+// Base de datos y acceso. La bitacora ya no vive en memoria: sobrevive a un reinicio.
+const db = abrirDb(cfg.dbArchivo);
+const auth = new Autenticacion(db, { horas: cfg.sesionHoras });
+
+// Retencion: lo viejo se borra al arrancar y una vez al dia (decision D12).
+const retener = () => {
+  const r = purgar(db, cfg.retencionDias);
+  const total = r.transmisiones + r.items + r.auditoria;
+  if (total) console.log(`retencion: borrados ${r.transmisiones} transmisiones, ${r.items} items y ${r.auditoria} registros de mas de ${cfg.retencionDias} dias`);
+};
+retener();
+setInterval(retener, 86_400_000).unref();
 
 const { PwaAdapter } = await import('./adapters/pwa.js');
 
@@ -20,13 +35,13 @@ let board;
 if (cfg.adapter === 'zello') {
   const { ZelloAdapter } = await import('./adapters/zello.js');
   adapter = new ZelloAdapter();
-  board = new PwaAdapter();
+  board = new PwaAdapter({ auth });
 } else {
-  adapter = new PwaAdapter();
+  adapter = new PwaAdapter({ auth });
   board = adapter;
 }
 
-const bitacora = new Bitacora();
+const bitacora = new Bitacora(db);
 const arbiter = new Arbiter(adapter);
 
 const log = (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
@@ -96,11 +111,11 @@ async function handleTransmission(userId, text) {
   // G1: kill switch por voz. Se evalua ANTES que todo lo demas, porque apagar al agente
   // no puede depender de que el agente clasifique bien.
   if (/relevo[,.\s]+(silencio|callate|apagate|apagado)/i.test(t)) {
-    arbiter.mute(userId);
+    if (arbiter.mute(userId)) auditar(db, userId, 'agente_silenciado', { por: 'voz' });
     return;
   }
   if (/relevo[,.\s]+(activo|encendido|despierta|reactivate|prendete)/i.test(t)) {
-    arbiter.unmute(userId);
+    if (arbiter.unmute(userId)) auditar(db, userId, 'agente_reactivado', { por: 'voz' });
     arbiter.drain();
     return;
   }
@@ -233,7 +248,9 @@ function esperarSilencio(msTope = 20000) {
 
 board.on('close-item', ({ itemId, by }) => {
   const item = bitacora.close(itemId, { reason: 'supervisor' });
-  if (item) log(`${by} cerro a mano: ${item.subject}`);
+  if (!item) return;
+  auditar(db, by, 'item_cerrado_a_mano', { itemId, asunto: item.subject });
+  log(`${by} cerro a mano: ${item.subject}`);
 });
 
 // ------------------------------------------------------------------------ arranque
@@ -273,3 +290,18 @@ if (board === adapter) {
   log(`Bitacora: ${boardUrl}/?board=1`);
 }
 log(`umbral ${cfg.unansweredMs}ms | rafaga ${cfg.maxBurstMs}ms | ${cfg.maxTxPerHour} tx/hora | ${cfg.maxRetries} reintento`);
+log(`base: ${cfg.dbArchivo} | sesion ${cfg.sesionHoras} h | retencion ${cfg.retencionDias} dias`);
+
+const abiertos = bitacora.openItems().length;
+if (abiertos) log(`bitacora recuperada: ${abiertos} pendiente(s) abierto(s) de antes del arranque`);
+
+if (!auth.hayUsuarios()) {
+  console.log('\n  AVISO: no hay ningun usuario. Nadie puede ver la bitacora todavia.');
+  console.log('  Crea el primero en tu propia terminal:  npm run usuario -- crear\n');
+}
+if (!cfg.https) {
+  console.log('  AVISO: sin HTTPS la sesion viaja sin cifrar. Solo sirve en este mismo computador.');
+}
+if (cfg.modoDesarrollo) {
+  console.log('  AVISO: MODO_DESARROLLO=1. Permite inyectar texto y elegir identidad. Apagalo en produccion.');
+}

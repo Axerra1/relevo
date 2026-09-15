@@ -94,23 +94,67 @@ El **adaptador de canal** es intercambiable: `pwa` (PTT propio en navegador) o `
 
 ## Correr
 
+Requiere **Node 22.13 o más nuevo** (usa la base SQLite que trae Node).
+
 ```bash
 npm install
 cp .env.example .env   # y pon tu OPENAI_API_KEY
+npm run usuario -- crear
 npm run dev
 ```
 
-Abre dos pestañas o dos teléfonos en la misma red:
+Abre la bitácora en `https://localhost:8787/?board=1` y entra con el usuario que creaste.
 
-- **Radio:** `http://localhost:8787/?user=torre3` y `?user=central`
-- **Bitácora:** `http://localhost:8787/?board=1`
+## Acceso y datos
+
+La bitácora muestra lo que dicen los trabajadores, así que **nada se ve sin usuario y clave**.
+
+| Rol | Puede |
+|---|---|
+| `admin` | Ver la bitácora y cerrar pendientes |
+| `supervisor` | Ver la bitácora y cerrar pendientes |
+| `radio` | Hablar desde el radio del navegador. **No ve la bitácora** |
+
+```bash
+npm run usuario -- crear                 # la clave se escribe a mano y no se muestra
+npm run usuario -- listar
+npm run usuario -- clave <correo>        # cambia la clave y cierra sus sesiones
+npm run usuario -- desactivar <correo>   # le quita el acceso y cierra sus sesiones
+```
+
+**Cómo está protegido**, y probado por `npm run test:acceso` (32 pruebas que atacan el servidor):
+
+- Claves con scrypt y sal propia; en la base nunca hay una clave legible
+- Sesión en cookie `HttpOnly`, `SameSite=Strict` y `Secure`; en la base solo queda el hash del token
+- El candado está en el **WebSocket**, que es por donde viajan los datos, no solo en la página
+- Se rechazan conexiones desde otras páginas (Origin ajeno)
+- Bloqueo tras 5 intentos fallidos por correo, o 20 por IP, durante 15 minutos
+- Al salir, o al desactivar un usuario, sus conexiones abiertas se cierran en el acto
+- Un correo que no existe responde igual y tarda lo mismo que una clave equivocada
+
+**Base de datos:** `datos/relevo.db` (SQLite). **Tiene datos personales y nunca se versiona.**
+La bitácora sobrevive a un reinicio, y tras reiniciar los pendientes viejos no disparan avisos
+atrasados.
+
+**Retención:** transmisiones, ítems resueltos y auditoría se borran pasados `RETENCION_DIAS`
+(90 por defecto, provisional hasta el concepto legal). Los pendientes abiertos no se borran.
+
+**Auditoría:** ingresos, intentos fallidos, bloqueos, salidas, cierres a mano y silencios por
+voz quedan registrados con quién y cuándo.
+
+### Canal propio en el navegador (desarrollo)
+
+Con `CHANNEL_ADAPTER=pwa`, el radio del navegador está en `https://localhost:8787/`. La
+identidad de quien habla es la del usuario con el que entró. Solo con `MODO_DESARROLLO=1` se
+puede elegir por la URL (`?user=torre3`) para probar varios radios desde un computador.
 
 Mantén apretado el círculo para transmitir.
 
 ### Probar sin micrófono
 
 La pantalla de bitácora trae un campo de inyección de texto. Sirve para probar el árbitro y
-la máquina de estados sin grabar nada:
+la máquina de estados sin grabar nada. **Solo funciona con `MODO_DESARROLLO=1` y un usuario
+`admin`**; en producción el servidor lo rechaza y lo deja en la auditoría.
 
 - **Enviar** — entra como una transmisión normal
 - **Enviar interrumpiendo** — simula que alguien aprieta PTT mientras el agente habla, que
