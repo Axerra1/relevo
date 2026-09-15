@@ -177,5 +177,12 @@ y adentro, `get /data/respaldos/<nombre-del-archivo>`.
 | Comportamiento detrás del proxy (cookie segura, IP real, bloqueo por intentos) | Probado — `node scripts/test-nube.mjs`, 11 pruebas |
 | Chequeo de salud y respaldos con rotación | Probado — mismas pruebas |
 | Acceso y base de datos | Probado — `npm run test:acceso`, 32 pruebas |
-| La imagen de Docker, los permisos del disco y el apagado limpio | **Sin probar todavía**: requieren Docker corriendo |
+| La imagen de Docker | Probada el 2026-09-15 en Docker local: 351 MB, construye en 15 s |
+| El proceso corre sin privilegios | Probado: corre como `node` (UID 1000), nunca como root |
+| Los permisos del disco montado | Probado: el disco llega con dueño root y el arranque lo entrega a `node` |
+| Que la imagen no lleve secretos ni datos | Probado: dentro solo hay `src`, `scripts`, `node_modules` y los `package*.json` |
+| Apagado limpio con SIGTERM | Probado: `apagado limpio`, código de salida 0, en 0,7 s |
+| Que los datos sobrevivan a un reinicio | Probado: la base y los respaldos quedan en el disco; al reiniciar no repite migraciones |
+| `relevo-usuario` dentro del servidor | Probado: corre como `node` y usa `/data/relevo.db`, no crea una base suelta en `/app` |
+| Hora de Bogotá en los logs | Probada: el log marca 17:54 cuando en UTC son 22:54 |
 | El despliegue en Fly.io | **Sin probar**: requiere tu cuenta |
