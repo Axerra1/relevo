@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relevo Radio · La radio de trabajo que recuerda</title>
+<meta name="description" content="Relevo es un agente que vive dentro del canal de radio de tu operación: escucha a todos, lleva la cuenta de lo pendiente y avisa por voz cuando algo se está cayendo. Seguridad privada, construcción y eventos.">
+<meta name="theme-color" content="#07090B">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+
+<!-- Vista previa al compartir el link por WhatsApp, LinkedIn o Instagram -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Relevo Radio">
+<meta property="og:title" content="Relevo Radio · La radio de trabajo que recuerda">
+<meta property="og:description" content="Un agente dentro de tu canal de radio: escucha, anota lo pendiente y avisa. Seguridad privada, construcción y eventos.">
+<meta property="og:image" content="https://relevoradio.com/og.png">
+<meta property="og:url" content="https://relevoradio.com/">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --canal:#07090B; --sup:#10151A; --sup2:#141B21; --linea:#1E272F; --hueso:#EEF3F6; --niebla:#8595A1;
+    --rojo:#FF4D3D; --ambar:#F2A93B; --azul:#5AAAFF; --verde:#3ECF6A;
+    --sans:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+    --ancho:1180px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{background:var(--canal);color:var(--hueso);font-family:var(--sans);font-size:17px;line-height:1.55;overflow-x:hidden}
+  a{color:inherit}
+  img,svg{display:block;max-width:100%}
+  .w{max-width:var(--ancho);margin:0 auto;padding-inline:20px}
+  @media (min-width:760px){ .w{padding-inline:32px} }
+
+  .dim{color:var(--niebla)} .rojo{color:var(--rojo)} .ambar{color:var(--ambar)} .azul{color:var(--azul)} .verde{color:var(--verde)}
+  .eyebrow{font:700 13px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--niebla)}
+  h1,h2,h3{letter-spacing:-.03em;line-height:1.02}
+  h1{font:900 clamp(44px,9.5vw,96px)/.98 var(--sans);letter-spacing:-.04em}
+  h2{font:900 clamp(34px,6.2vw,62px)/1.02 var(--sans)}
+  h3{font:800 clamp(24px,3.6vw,30px)/1.1 var(--sans);letter-spacing:-.02em}
+  .lead{font:500 clamp(18px,2.4vw,21px)/1.5 var(--sans);color:var(--niebla)}
+  section{padding-block:72px}
+  @media (min-width:760px){ section{padding-block:112px} }
+
+  /* ---------------------------------------------------------------- botones */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 26px;
+    border-radius:999px;font:800 17px var(--sans);text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .12s,background .12s}
+  .btn:active{transform:scale(.98)}
+  .btn-rojo{background:var(--rojo);color:#fff}
+  .btn-rojo:hover{background:#ff6252}
+  .btn-linea{border-color:var(--linea);color:var(--hueso);background:transparent}
+  .btn-linea:hover{border-color:#34414c}
+  .btn svg{width:20px;height:20px}
+
+  /* ------------------------------------------------------------------- nav */
+  nav{position:sticky;top:0;z-index:20;background:rgba(7,9,11,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--linea)}
+  nav .w{display:flex;align-items:center;gap:22px;height:64px}
+  .logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  .logo .sim{width:30px;height:30px}
+  .logo span{font:800 14px var(--sans);letter-spacing:.2em;white-space:nowrap}
+  .logo b{color:var(--rojo);font-weight:800}
+  .navlinks{display:none;gap:26px;margin-left:auto}
+  .navlinks a{text-decoration:none;font:600 15px var(--sans);color:var(--niebla)}
+  .navlinks a:hover{color:var(--hueso)}
+  nav .btn{margin-left:auto;min-height:40px;padding:9px 18px;font-size:15px;white-space:nowrap}
+  @media (min-width:900px){ .navlinks{display:flex} nav .btn{margin-left:0} }
+  /* En celular el nombre y el botón se partían en dos líneas y la barra quedaba apretada */
+  @media (max-width:400px){
+    nav .w{gap:12px}
+    .logo span{font-size:13px;letter-spacing:.12em}
+    nav .btn{padding:8px 15px;font-size:14px}
+  }
+
+  /* ------------------------------------------------------------------ hero */
+  .hero{position:relative;padding-block:56px 72px;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(var(--linea) 1px,transparent 1px),linear-gradient(90deg,var(--linea) 1px,transparent 1px);
+    background-size:56px 56px;opacity:.35;mask-image:radial-gradient(ellipse at 70% 30%,#000 10%,transparent 65%);pointer-events:none}
+  .hero .w{position:relative;display:grid;gap:48px}
+  @media (min-width:980px){ .hero{padding-block:96px 120px} .hero .w{grid-template-columns:1.05fr .95fr;align-items:center;gap:56px} }
+  .hero .lead{margin-top:24px;max-width:560px}
+  .ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+  .sello{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:30px;font:600 14px var(--sans);color:var(--niebla)}
+  .sello span{display:flex;align-items:center;gap:8px}
+  .sello i{width:7px;height:7px;border-radius:50%;background:var(--verde)}
+
+  /* canal en vivo */
+  .canal{background:linear-gradient(180deg,var(--sup2),var(--sup));border:1px solid var(--linea);border-radius:22px;
+    box-shadow:0 40px 90px rgba(0,0,0,.55);overflow:hidden}
+  .canal-top{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--linea);font:700 12px var(--sans);letter-spacing:.14em;color:var(--niebla);text-transform:uppercase}
+  .canal-top .vivo{display:flex;align-items:center;gap:7px;color:var(--rojo)}
+  .canal-top .vivo i{width:8px;height:8px;border-radius:50%;background:var(--rojo);animation:latido 1.6s infinite}
+  .canal-top .estado{margin-left:auto;font:600 12px var(--mono);letter-spacing:0;text-transform:none}
+  @keyframes latido{0%,100%{opacity:1}50%{opacity:.3}}
+  .canal-log{padding:18px 18px 22px;min-height:348px;font:500 14px/1.55 var(--mono)}
+  @media (min-width:420px){ .canal-log{font-size:15px;padding:22px 24px 26px} }
+  .tx{display:grid;grid-template-columns:48px 1fr;gap:10px;padding:9px 0;opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s}
+  .tx.on{opacity:1;transform:none}
+  .tx .t{color:var(--niebla)}
+  .tx .quien{color:var(--hueso);font-weight:700}
+  .tx.agente .quien,.tx.agente .txt{color:var(--azul)}
+  .tx .estado-linea{display:flex;align-items:center;gap:8px;margin-top:3px;font-size:.92em}
+  .tx .estado-linea i{width:8px;height:8px;border-radius:50%;flex:none}
+  .onda{display:inline-flex;align-items:center;gap:3px;height:18px;margin-left:8px;vertical-align:middle}
+  .onda i{width:3px;border-radius:2px;background:var(--azul);animation:onda .9s ease-in-out infinite}
+  @keyframes onda{0%,100%{height:4px}50%{height:18px}}
+
+  /* -------------------------------------------------------------- problema */
+  .problema{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);background:linear-gradient(180deg,#090c0f,var(--canal))}
+  .dolores{display:grid;gap:14px;margin-top:44px}
+  @media (min-width:860px){ .dolores{grid-template-columns:repeat(3,1fr);gap:18px} }
+  .dolor{padding:26px;border:1px solid var(--linea);border-radius:18px;background:var(--sup)}
+  .dolor .n{font:900 44px/1 var(--sans);letter-spacing:-.04em;color:var(--ambar)}
+  .dolor h3{margin-top:14px;font-size:23px}
+  .dolor p{margin-top:10px;color:var(--niebla)}
+
+  /* ---------------------------------------------------------- cómo funciona */
+  .pasos{display:grid;gap:14px;margin-top:48px}
+  @media (min-width:760px){ .pasos{grid-template-columns:repeat(2,1fr)} }
+  @media (min-width:1080px){ .pasos{grid-template-columns:repeat(4,1fr)} }
+  .paso{padding:28px 24px;border-radius:18px;background:var(--sup);border:1px solid var(--linea);border-top:4px solid var(--c)}
+  .paso .punto{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 22px var(--c)}
+  .paso h3{margin-top:20px;font-size:25px}
+  .paso p{margin-top:10px;color:var(--niebla)}
+  .nadie{margin-top:36px;font:700 clamp(20px,2.8vw,26px)/1.3 var(--sans);letter-spacing:-.01em}
+
+  /* ------------------------------------------------------------- industrias */
+  .inds{display:grid;gap:18px;margin-top:48px}
+  @media (min-width:1000px){ .inds{grid-template-columns:repeat(3,1fr)} }
+  .ind{scroll-margin-top:84px;display:flex;flex-direction:column;padding:30px 26px;border-radius:22px;background:var(--sup);border:1px solid var(--linea)}
+  .ind .eyebrow{color:var(--hueso)}
+  .ind h3{margin-top:16px}
+  .ind .dolor-ind{margin-top:14px;color:var(--niebla)}
+  .minilog{margin:24px 0;padding:16px 18px;border-radius:14px;background:var(--canal);border:1px solid var(--linea);font:500 13.5px/1.6 var(--mono)}
+  .minilog div{white-space:normal}
+  .ind .btn{margin-top:auto;align-self:flex-start}
+
+  /* ---------------------------------------------------------- relevo turno */
+  .turno .w{display:grid;gap:40px}
+  @media (min-width:960px){ .turno .w{grid-template-columns:1fr 1fr;align-items:center;gap:64px} }
+  .cifras{display:flex;flex-direction:column;gap:6px;margin-top:30px}
+  .cifras div{display:flex;align-items:baseline;gap:14px}
+  .cifras b{font:900 clamp(56px,11vw,96px)/.9 var(--sans);letter-spacing:-.05em}
+  .cifras span{font:700 19px var(--sans);color:var(--niebla)}
+  .cita{padding:26px;border-radius:20px;background:var(--sup);border:1px solid var(--linea);font:500 15px/1.7 var(--mono)}
+  .cita .raf{margin-top:12px;padding-left:14px;border-left:3px solid var(--azul);color:var(--azul)}
+
+  /* ------------------------------------------------------------- privacidad */
+  .priv{display:grid;gap:14px;margin-top:48px}
+  @media (min-width:760px){ .priv{grid-template-columns:repeat(2,1fr)} }
+  .p-item{padding:26px;border-radius:18px;background:var(--sup);border:1px solid var(--linea)}
+  .p-item h3{font-size:22px}
+  .p-item p{margin-top:8px;color:var(--niebla)}
+  .silencio{margin-top:18px;padding:30px 28px;border-radius:20px;background:var(--sup);border:1px solid var(--linea);border-left:5px solid var(--rojo)}
+  .silencio b{display:block;margin-top:8px;font:900 clamp(34px,6vw,54px)/1.05 var(--sans);letter-spacing:-.03em;color:var(--rojo)}
+
+  /* ---------------------------------------------------------- compatibilidad */
+  .compat{padding:28px;border-radius:20px;border:1px dashed #33414c;display:grid;gap:18px}
+  @media (min-width:860px){ .compat{grid-template-columns:auto 1fr auto;align-items:center;gap:28px} }
+  .compat .tag{font:800 13px var(--sans);letter-spacing:.14em;color:var(--verde);text-transform:uppercase}
+
+  /* ------------------------------------------------------------------ faq */
+  .faq{margin-top:40px;border-top:1px solid var(--linea)}
+  details{border-bottom:1px solid var(--linea)}
+  summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:16px;padding:22px 0;font:700 19px/1.3 var(--sans)}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";margin-left:auto;font:500 28px var(--sans);color:var(--niebla);transition:transform .2s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details p{padding:0 0 24px;color:var(--niebla);max-width:760px}
+
+  /* ------------------------------------------------------------- cta final */
+  .final{text-align:center;position:relative;overflow:hidden}
+  .final .sim-grande{width:120px;height:120px;margin:0 auto 34px}
+  .final .lead{margin:20px auto 0;max-width:620px}
+  .final .ctas{justify-content:center}
+
+  footer{border-top:1px solid var(--linea);padding-block:36px;color:var(--niebla);font-size:14px}
+  footer .w{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center}
+  footer .der{margin-left:auto;display:flex;gap:20px}
+  footer a{text-decoration:none}
+  footer a:hover{color:var(--hueso)}
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .tx{transition:none}
+    .onda i,.canal-top .vivo i{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ====================================================================== NAV -->
+<nav>
+  <div class="w">
+    <a class="logo" href="#" aria-label="Relevo Radio, inicio">
+      <span class="sim" data-simbolo></span><span>RELEVO <b>RADIO</b></span>
+    </a>
+    <div class="navlinks">
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#industrias">Industrias</a>
+      <a href="#privacidad">Privacidad</a>
+      <a href="#preguntas">Preguntas</a>
+    </div>
+    <a class="btn btn-rojo" data-cta="general" href="#contacto">Pide un piloto</a>
+  </div>
+</nav>
+
+<!-- ===================================================================== HERO -->
+<header class="hero">
+  <div class="w">
+    <div>
+      <div class="eyebrow">Seguridad privada · Construcción · Eventos</div>
+      <h1 style="margin-top:18px">La radio de trabajo que <span class="rojo">recuerda.</span></h1>
+      <p class="lead">Relevo es un agente que vive dentro del canal de radio de tu operación. Escucha a todos, lleva la cuenta de lo pendiente y avisa por voz cuando algo se está cayendo.</p>
+      <div class="ctas">
+        <a class="btn btn-rojo" data-cta="general" href="#contacto"><span data-icono-wa></span>Pide un piloto</a>
+        <a class="btn btn-linea" href="#como-funciona">Cómo funciona</a>
+      </div>
+      <div class="sello">
+        <span><i></i>Nadie escribe ni instala nada</span>
+        <span><i></i>Nadie analiza tu voz</span>
+        <span><i></i>Funciona sobre Zello Work</span>
+      </div>
+    </div>
+
+    <div class="canal" aria-label="Ejemplo de un canal de radio con Relevo">
+      <div class="canal-top">
+        <span class="vivo"><i></i>Canal</span><span>Obra · Torre 3</span>
+        <span class="estado" id="estado-canal">canal libre</span>
+      </div>
+      <div class="canal-log" id="canal-log"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================================================================= PROBLEMA -->
+<section class="problema">
+  <div class="w">
+    <div class="eyebrow">El problema</div>
+    <h2 style="margin-top:16px;max-width:880px">Lo que se dice por radio se evapora al soltar el botón.</h2>
+    <p class="lead" style="margin-top:20px;max-width:720px">La radio es el único canal de trabajo que todavía no tiene memoria. Todo lo importante se dice en voz alta, y nadie alcanza a escucharlo completo.</p>
+    <div class="dolores">
+      <div class="dolor">
+        <div class="n">01</div>
+        <h3>La petición que nadie contestó</h3>
+        <p>Alguien pide material, refuerzo o apoyo. El canal sigue en otra cosa. Nadie se entera de que quedó pendiente.</p>
+      </div>
+      <div class="dolor">
+        <div class="n">02</div>
+        <h3>La novedad que no quedó escrita</h3>
+        <p>Lo que se reportó a las 2 de la mañana depende de que alguien lo recuerde y lo anote después.</p>
+      </div>
+      <div class="dolor">
+        <div class="n">03</div>
+        <h3>El relevo de turno de memoria</h3>
+        <p>Ocho o doce horas de operación se entregan en una conversación de dos minutos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== CÓMO FUNCIONA -->
+<section id="como-funciona">
+  <div class="w">
+    <div class="eyebrow">Cómo funciona</div>
+    <h2 style="margin-top:16px;max-width:820px">Un participante más en tu canal de radio.</h2>
+    <div class="pasos">
+      <div class="paso" style="--c:var(--rojo)">
+        <div class="punto"></div>
+        <h3>Escucha a todos</h3>
+        <p>Relevo entra al canal como un integrante más y oye todas las transmisiones a la vez.</p>
+      </div>
+      <div class="paso" style="--c:var(--ambar)">
+        <div class="punto"></div>
+        <h3>Anota lo pendiente</h3>
+        <p>Distingue una petición de un reporte o una respuesta, y lleva la cuenta de lo que quedó abierto.</p>
+      </div>
+      <div class="paso" style="--c:var(--azul)">
+        <div class="punto"></div>
+        <h3>Avisa por voz</h3>
+        <p>Si una petición se queda sin respuesta, lo dice al aire. Corto, una vez, cuando el canal está en silencio.</p>
+      </div>
+      <div class="paso" style="--c:var(--verde)">
+        <div class="punto"></div>
+        <h3>Cierra lo resuelto</h3>
+        <p>Cuando alguien contesta, el pendiente se cierra solo. Cada registro cita la frase exacta de donde salió.</p>
+      </div>
+    </div>
+    <p class="nadie">Nadie tiene que escribir, abrir una app ni cambiar cómo trabaja. <span class="dim">La información ya se está diciendo.</span></p>
+  </div>
+</section>
+
+<!-- =============================================================== INDUSTRIAS -->
+<section id="industrias" style="padding-top:0">
+  <div class="w">
+    <div class="eyebrow">Industrias</div>
+    <h2 style="margin-top:16px;max-width:820px">Donde la operación habla por radio.</h2>
+    <div class="inds">
+
+      <article class="ind" id="seguridad">
+        <div class="eyebrow">Seguridad privada</div>
+        <h3>Cada novedad del turno queda escrita.</h3>
+        <p class="dolor-ind">Rondas, puestos y relevos de 12 horas. Lo que el guarda reporta por radio no debería depender de que alguien lo recuerde al cambio de turno.</p>
+        <div class="minilog">
+          <div><span class="dim">02:14</span> <b>&lt;puesto 2&gt;</b> Portón norte sin candado.</div>
+          <div class="ambar">● novedad registrada</div>
+          <div style="margin-top:8px"><span class="dim">02:31</span> <b>&lt;supervisor&gt;</b> Ronda 3 completa.</div>
+        </div>
+        <a class="btn btn-linea" data-cta="seguridad privada" href="#contacto">Piloto para seguridad</a>
+      </article>
+
+      <article class="ind" id="construccion">
+        <div class="eyebrow">Construcción</div>
+        <h3>Ninguna petición se pierde entre la grúa y el vaciado.</h3>
+        <p class="dolor-ind">Material, equipos y apoyo se piden por radio. El canal no para, y una petición se dice una vez y queda enterrada.</p>
+        <div class="minilog">
+          <div><span class="dim">06:04</span> <b>&lt;torre 3&gt;</b> Necesito material en el piso 8.</div>
+          <div class="ambar">● pendiente abierto</div>
+          <div class="azul" style="margin-top:8px"><span class="dim">06:05</span> <b>RELEVO:</b> Pendiente. Material en el piso 8. Sin respuesta.</div>
+        </div>
+        <a class="btn btn-linea" data-cta="construcción" href="#contacto">Piloto para obra</a>
+      </article>
+
+      <article class="ind" id="eventos">
+        <div class="eyebrow">Eventos</div>
+        <h3>Cientos de voces en el canal. Alguien lleva la cuenta.</h3>
+        <p class="dolor-ind">Accesos, logística, incidentes y staff rotando. En un evento el radio no se calla, y lo que se pidió hace 20 minutos ya nadie lo recuerda.</p>
+        <div class="minilog">
+          <div><span class="dim">19:42</span> <b>&lt;acceso 3&gt;</b> Necesito refuerzo en la puerta norte.</div>
+          <div class="ambar">● pendiente abierto</div>
+          <div style="margin-top:8px"><span class="dim">19:43</span> <b>&lt;logística&gt;</b> Van dos del staff para allá.</div>
+          <div class="verde">● cerrado</div>
+        </div>
+        <a class="btn btn-linea" data-cta="eventos" href="#contacto">Piloto para eventos</a>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= RELEVO TURNO -->
+<section class="turno problema">
+  <div class="w">
+    <div>
+      <div class="eyebrow">Cambio de turno</div>
+      <h2 style="margin-top:16px">El que entra hereda la operación completa.</h2>
+      <div class="cifras">
+        <div><b>8 h</b><span>de operación</span></div>
+        <div><b class="dim">2 min</b><span>de relevo</span></div>
+      </div>
+      <p class="lead" style="margin-top:22px">Ya no de memoria.</p>
+    </div>
+    <div class="cita">
+      <div><b>&lt;supervisor&gt;</b> Relevo, relevo de turno.</div>
+      <div class="raf">RELEVO: Abierto 1. Arnés de la cuadrilla 2.</div>
+      <div class="raf">RELEVO: Abierto 2. Acero de tres octavos.</div>
+      <div class="dim" style="margin-top:16px;font-size:13.5px">Lo más importante se dice al aire. Todo lo demás queda escrito, citando la frase de donde salió.</div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== PRIVACIDAD -->
+<section id="privacidad">
+  <div class="w">
+    <div class="eyebrow">Privacidad y control</div>
+    <h2 style="margin-top:16px;max-width:820px">Nadie analiza tu voz.</h2>
+    <div class="priv">
+      <div class="p-item">
+        <h3>La identidad la firma la red</h3>
+        <p>Quién habla lo dice la propia red de radio, que ya sabe quién transmite. Relevo nunca identifica a nadie por su voz.</p>
+      </div>
+      <div class="p-item">
+        <h3>El audio no se guarda</h3>
+        <p>Relevo convierte cada transmisión en texto y descarta el audio. En el registro solo queda lo que se dijo.</p>
+      </div>
+      <div class="p-item">
+        <h3>Habla lo mínimo</h3>
+        <p>Solo en dos momentos: cuando una petición se queda sin respuesta y cuando alguien pide el relevo de turno. En una radio solo habla uno a la vez, y eso se respeta.</p>
+      </div>
+      <div class="p-item">
+        <h3>Cuando no entiende, no inventa</h3>
+        <p>Si una transmisión llega con mucho ruido, Relevo no adivina: la marca para que la revise una persona.</p>
+      </div>
+    </div>
+    <div class="silencio">
+      <div class="eyebrow">Y si molesta, cualquiera en el canal dice</div>
+      <b>“Relevo, silencio.”</b>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== COMPATIBILIDAD -->
+<section style="padding-top:0">
+  <div class="w">
+    <div class="compat">
+      <div class="tag">● Compatibilidad</div>
+      <div>
+        <h3 style="font-size:24px">Hoy Relevo funciona sobre Zello Work.</h3>
+        <p class="dim" style="margin-top:8px">Si tu operación usa radios de otra marca, cuéntanos cuáles: es la integración que más nos están pidiendo.</p>
+      </div>
+      <a class="btn btn-linea" data-cta="otras radios" href="#contacto">Uso otras radios</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== PREGUNTAS -->
+<section id="preguntas" style="padding-top:0">
+  <div class="w">
+    <div class="eyebrow">Preguntas</div>
+    <h2 style="margin-top:16px">Lo que nos preguntan primero.</h2>
+    <div class="faq">
+      <details>
+        <summary>¿Los trabajadores tienen que instalar algo?</summary>
+        <p>No. Siguen usando su radio como siempre. Relevo entra al canal como un participante más; nadie tiene que abrir una app ni escribir nada.</p>
+      </details>
+      <details>
+        <summary>¿Tengo que cambiar mis radios?</summary>
+        <p>Hoy Relevo funciona sobre Zello Work, que corre en celulares y radios con conexión a internet. Si tu operación usa radios de otra marca, escríbenos y te contamos qué opciones hay para tu caso.</p>
+      </details>
+      <details>
+        <summary>¿Se graba lo que dicen?</summary>
+        <p>Relevo convierte el audio en texto y no guarda el audio. Quién habla lo identifica la red de radio, no un análisis de la voz. Lo que queda es el registro escrito de la operación.</p>
+      </details>
+      <details>
+        <summary>¿Y si el agente se equivoca?</summary>
+        <p>Está hecho para equivocarse hacia el silencio: si no entiende una transmisión, no inventa, la marca para revisión humana. Y cada pendiente cita la frase exacta de donde salió, para que cualquiera pueda verificarlo.</p>
+      </details>
+      <details>
+        <summary>¿Cuánto cuesta?</summary>
+        <p>Estamos abriendo pilotos con las primeras empresas de seguridad privada, construcción y eventos en Colombia. Escríbenos y lo conversamos según el tamaño de tu operación.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ CTA FINAL -->
+<section class="final problema" id="contacto">
+  <div class="w">
+    <div class="sim-grande" data-simbolo></div>
+    <h2>¿Tu operación habla por radio?</h2>
+    <p class="lead">Estamos abriendo pilotos con empresas de seguridad privada, constructoras y empresas de eventos en Colombia. Te mostramos Relevo funcionando en un canal real.</p>
+    <div class="ctas">
+      <a class="btn btn-rojo" data-cta="general" data-directo href="#"><span data-icono-wa></span>Escríbenos por WhatsApp</a>
+      <a class="btn btn-linea" data-correo href="#">Escríbenos por correo</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="w">
+    <a class="logo" href="#"><span class="sim" data-simbolo style="width:24px;height:24px"></span><span>RELEVO <b>RADIO</b></span></a>
+    <span>© 2026 Relevo Radio · Hecho en Bogotá</span>
+    <div class="der">
+      <a href="#industrias">Industrias</a>
+      <a data-instagram href="https://instagram.com/relevoradio" rel="noopener">Instagram</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ============================================================ CONFIGURACIÓN
+   * Lo único que hay que tocar antes de publicar.
+   *   whatsapp: número con indicativo, sin +, espacios ni guiones. Ej: '573001234567'
+   *             Si queda vacío, todos los botones abren el correo en su lugar.
+   *   correo:   el buzón de contacto.
+   * ======================================================================= */
+  const CONTACTO = {
+    whatsapp: '',
+    correo: 'hola@relevoradio.com',
+  };
+
+  /* Cada botón de industria manda su industria en el mensaje. Así, cuando lleguen los
+     primeros contactos, se sabe cuál de las tres industrias respondió primero: es la
+     señal para decidir si concentrarse en una (decisión D11). */
+  function destino(industria) {
+    const texto = industria && industria !== 'general'
+      ? `Hola, quiero conocer el piloto de Relevo Radio para ${industria}.`
+      : 'Hola, quiero conocer el piloto de Relevo Radio para mi operación.';
+    if (CONTACTO.whatsapp) return `https://wa.me/${CONTACTO.whatsapp}?text=${encodeURIComponent(texto)}`;
+    return `mailto:${CONTACTO.correo}?subject=${encodeURIComponent('Piloto de Relevo Radio')}&body=${encodeURIComponent(texto)}`;
+  }
+
+  document.querySelectorAll('[data-cta]').forEach((a) => {
+    const industria = a.dataset.cta;
+    // Los botones de arriba y de industria bajan al contacto solo si no hay WhatsApp;
+    // con WhatsApp configurado abren el chat directo con la industria en el mensaje.
+    if (CONTACTO.whatsapp || a.hasAttribute('data-directo')) {
+      a.href = destino(industria);
+      if (CONTACTO.whatsapp) { a.target = '_blank'; a.rel = 'noopener'; }
+    }
+  });
+  document.querySelectorAll('[data-correo]').forEach((a) => {
+    a.href = `mailto:${CONTACTO.correo}?subject=${encodeURIComponent('Piloto de Relevo Radio')}`;
+  });
+  if (!CONTACTO.whatsapp) {
+    // Sin WhatsApp el botón rojo ya abre el correo: el segundo botón sobraría.
+    document.querySelectorAll('[data-directo]').forEach((a) => (a.lastChild.textContent = 'Escríbenos'));
+    document.querySelectorAll('[data-correo]').forEach((a) => a.remove());
+    document.querySelectorAll('[data-icono-wa]').forEach((el) => el.remove());
+  }
+
+  /* ================================================================ SÍMBOLO */
+  const simbolo = `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:100%;height:100%">
+    <path d="M103.30 35 A50 50 0 1 1 35 16.70" fill="none" stroke="#EEF3F6" stroke-width="9" stroke-linecap="round" opacity=".5"/>
+    <path d="M34.02 75 A30 30 0 1 1 75 85.98" fill="none" stroke="#EEF3F6" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="60" cy="60" r="13" fill="#FF4D3D"/></svg>`;
+  document.querySelectorAll('[data-simbolo]').forEach((el) => (el.innerHTML = simbolo));
+  const wa = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3Z"/></svg>`;
+  document.querySelectorAll('[data-icono-wa]').forEach((el) => (el.outerHTML = wa));
+
+  /* ======================================================== CANAL EN VIVO
+   * La misma secuencia que corrió sobre Zello Work el 12-sep-2026, contada en pantalla.
+   * ================================================================== */
+  const log = document.getElementById('canal-log');
+  const estadoCanal = document.getElementById('estado-canal');
+  // ?estatico muestra la secuencia completa sin animar: sirve para capturas de pantalla.
+  const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches || location.search.includes('estatico');
+
+  const guion = [
+    { t: '06:04', quien: '<torre 3>', txt: 'Central, necesito material en el piso 8, me copian.', canal: 'torre 3 transmitiendo' },
+    { t: '06:04', estado: ['ambar', 'petición · pendiente abierto'], espera: 900 },
+    { t: '06:04', quien: '<grúa>', txt: 'Pluma libre, bajando el balde.', canal: 'grúa transmitiendo' },
+    { t: '06:05', quien: '<central>', txt: 'Grúa, QAP que estamos vaciando la placa.', canal: 'central transmitiendo', espera: 2000 },
+    { t: '06:05', agente: true, quien: 'RELEVO', txt: 'Pendiente. Material en el piso 8. Sin respuesta.', canal: 'Relevo transmitiendo', espera: 2600 },
+    { t: '06:05', quien: '<central>', txt: 'Ya va subiendo el material al 8.', canal: 'central transmitiendo' },
+    { t: '06:05', estado: ['verde', 'respondió · pendiente cerrado'], espera: 4200 },
+  ];
+
+  function linea(p) {
+    const el = document.createElement('div');
+    el.className = 'tx' + (p.agente ? ' agente' : '');
+    const esc = (s) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (p.estado) {
+      el.innerHTML = `<span class="t"></span><div class="estado-linea"><i style="background:var(--${p.estado[0]})"></i><span class="${p.estado[0]}">${p.estado[1]}</span></div>`;
+    } else {
+      const onda = p.agente && !quieto ? '<span class="onda"><i></i><i style="animation-delay:.15s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.45s"></i></span>' : '';
+      el.innerHTML = `<span class="t">${p.t}</span><div><span class="quien">${esc(p.quien)}</span>${onda}<br><span class="txt">${esc(p.txt)}</span></div>`;
+    }
+    return el;
+  }
+
+  function correr() {
+    log.innerHTML = '';
+    let acumulado = 300;
+    guion.forEach((p, i) => {
+      setTimeout(() => {
+        const el = linea(p);
+        log.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('on'));
+        estadoCanal.textContent = p.canal || 'canal libre';
+        if (p.agente) estadoCanal.style.color = 'var(--azul)';
+        else estadoCanal.style.color = '';
+        if (i === guion.length - 1) setTimeout(correr, p.espera || 3000);
+      }, acumulado);
+      acumulado += p.espera || 1300;
+    });
+  }
+
+  if (quieto) {
+    guion.forEach((p) => { const el = linea(p); el.classList.add('on'); log.appendChild(el); });
+  } else {
+    correr();
+  }
+</script>
+</body>
+</html>
