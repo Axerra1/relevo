@@ -80,3 +80,40 @@ construye. Ver decisión D1.
 ## M9 · Techo de tiempo real para el demo
 **Estimado.** Con cierre 16:30 y necesidad de repo + video de 2 minutos + post, el tiempo neto
 de código es de **~3 horas**, no 4. Cualquier alcance que no quepa ahí no es alcance, es deseo.
+
+---
+
+## M10 · Disponibilidad del nombre "Relevo" (2026-09-15)
+
+### Marca en Colombia — Medido en SIPI (sipi.sic.gov.co), búsqueda `*RELEVO*`
+13 signos. **Ninguno en las clases de Relevo: 9 (software), 38 (telecomunicaciones) ni 42 (SaaS).**
+
+| Signo | Titular | Clase | Estado |
+|---|---|---|---|
+| RELEVO | Agroser S.A.S | 1, 5 (agroquímicos) | caducados y uno vigente en 5 |
+| RELEVO | Abril S.A.S (Cali) | 3 y 35 (cosméticos; enseña comercial de tienda) | registradas |
+| RELEVOS | persona natural | 35 | registrada |
+| El Relevo | persona natural | 30 (alimentos) | registrada |
+| CENTRO DE RELEVO COLOMBIA | Federación Nacional de Sordos | 41 | registrada |
+| GENERACIÓN (DEL) RELEVO y variantes | iglesia y persona natural | 16, 25, 41, 45 | registradas |
+
+**Riesgos para el abogado, no resueltos:**
+1. **Descriptividad.** "Relevo de turno" es literalmente lo que hace el producto, y la Decisión 486
+   niega signos descriptivos de los servicios que distinguen. Una marca mixta (nombre + logo)
+   ayuda. Es criterio del examinador, no se puede medir desde aquí.
+2. **Cercanía conceptual** con "Centro de Relevo", que es un servicio de relevo telefónico para
+   personas sordas, si se solicita clase 38.
+
+### Dominios — Medido por DNS (no es definitivo: confirmar en un registrador)
+Registrados: relevo.com, relevo.co, relevo.com.co, relevo.app, relevo.ai, relevo.io,
+getrelevo.com, relevoapp.com. **relevo.co y relevo.io están en Afternic: en venta.**
+Sin DNS, probablemente libres: **relevoradio.com**, userelevo.com, relevo.lat, relevo.radio.
+Nota: .radio es un dominio con requisitos de elegibilidad. **TBD** si una empresa de software
+de radio los cumple.
+
+### Otras marcas con el mismo nombre — Citado
+"Relevo App" en la App Store es de Relevo GmbH (Alemania), envases reutilizables de comida.
+Sector y país distintos.
+
+### Handles de redes — TBD
+No verificable sin sesión. Probablemente @relevo está tomado. Vía: intentar crearlo.

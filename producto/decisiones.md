@@ -88,6 +88,49 @@ etiqueta normal de radio: no se pisa una transmisión en curso.
 
 ---
 
+## D9 · Comercializar sin entrevistas de descubrimiento
+*Decidido por Santiago el 2026-09-15, después del MVP.*
+
+**Decidido:** se da por hecho que constructoras, empresas de eventos y de seguridad privada
+tienen el dolor y pagarían por resolverlo. No se hacen las entrevistas E1 del segmento 13.
+
+**Consecuencias:**
+1. D2 se amplía: el ICP pasa de solo obra a **obra + eventos + seguridad privada**. Queda por
+   decidir cuál va primero en el mensaje de marca: una landing no puede hablarle a los tres.
+2. Los TBD de verbatims (PRD §3) y del precio (PVB §7) siguen abiertos. La primera evidencia
+   real ya no viene de entrevistas sino de **las primeras conversaciones de venta y del primer
+   piloto**. Cada conversación comercial registra tres cosas: ¿contó una historia real de una
+   petición perdida?, ¿aceptó un piloto?, ¿a qué precio dijo que no?
+3. La puerta del segmento 13 *"día 90 sin un solo canal piloto firmado"* pasa a ser la señal
+   principal de que la tesis falla.
+
+**Lo que NO se salta:** el concepto legal (E3). No es validación de mercado, es la condición
+para operar: Relevo trata datos personales de los trabajadores del cliente, y un comprador HSE
+no firma sin él.
+
+---
+
+## D10 · Marca: Relevo Radio
+*Decidido por Santiago el 2026-09-15.*
+
+El producto sigue llamándose **Relevo**; la marca comercial es **Relevo Radio**, con
+**relevoradio.com** y **@relevoradio**. Motivo: los dominios de "relevo" están tomados (M10), y
+el nombre compuesto es más distintivo frente al riesgo de marca descriptiva.
+**Abierto:** comprar el dominio, reservar handles, y la consulta de marca con abogado (clases
+9, 38, 42; marca mixta).
+
+## D11 · Tres industrias al mismo tiempo
+*Decidido por Santiago el 2026-09-15.*
+
+Seguridad privada, construcción y eventos arrancan en paralelo. Se recomendó una sola primero;
+se decidió así. **Cómo se ejecuta:** un mensaje central que no nombra industria ("la radio de
+trabajo que recuerda") y un mensaje propio por industria — secciones separadas en la landing,
+pilares rotativos en Instagram, y una versión del one-pager de venta por industria.
+**Riesgo registrado:** tres mensajes diluyen la señal; se revisa cuál industria responde
+primero y se decide si concentrar.
+
+---
+
 ## Conflictos registrados pero no resueltos hoy
 - **Dolor atribuible al handover:** TBD. La cifra de USD 50.000 millones de los dos researches
   está mal atribuida (ver `medicion.md` M2). Sin número defendible hasta medir en un piloto.

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>@relevoradio · vista previa</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{width:1080px;background:#000;color:#f5f5f5;font-family:"Segoe UI",system-ui,sans-serif}
+  .cab{padding:44px 40px 30px;display:flex;gap:44px;align-items:center}
+  .cab img{width:210px;height:210px;border-radius:50%;border:2px solid #262626}
+  .handle{font:600 40px "Segoe UI",sans-serif}
+  .nums{display:flex;gap:48px;margin-top:18px;font-size:30px}
+  .nums b{font-weight:700}
+  .bio{padding:0 40px 34px;font-size:30px;line-height:1.38}
+  .bio .nombre{font-weight:700}
+  .bio a{color:#e0f1ff;text-decoration:none}
+  .botones{display:flex;gap:14px;padding:0 40px 34px}
+  .botones div{flex:1;background:#262626;border-radius:14px;text-align:center;padding:18px;font:600 28px "Segoe UI",sans-serif}
+  .dest{display:flex;gap:34px;padding:0 40px 40px}
+  .dest div{text-align:center;font-size:24px}
+  .dest i{display:block;width:124px;height:124px;border-radius:50%;border:2px solid #333;margin-bottom:10px;
+    background:#07090B center/70% no-repeat url('../logo/avatar-instagram.png')}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+  .grid img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+  .nota{padding:24px 40px;font-size:22px;color:#8a8a8a}
+</style>
+</head>
+<body>
+  <div class="cab">
+    <img src="../logo/avatar-instagram.png" alt="">
+    <div>
+      <div class="handle">relevoradio</div>
+      <div class="nums"><div><b>9</b> publicaciones</div><div><b>0</b> seguidores</div><div><b>0</b> seguidos</div></div>
+    </div>
+  </div>
+  <div class="bio">
+    <div class="nombre">Relevo Radio</div>
+    La radio de trabajo que recuerda.<br>
+    Un agente IA dentro de tu canal PTT: escucha, anota lo pendiente y avisa.<br>
+    Seguridad · Obra · Eventos 👇<br>
+    <a>relevoradio.com</a>
+  </div>
+  <div class="botones"><div>Seguir</div><div>Mensaje</div><div>WhatsApp</div></div>
+  <div class="dest">
+    <div><i></i>Qué es</div><div><i></i>Seguridad</div><div><i></i>Obra</div><div><i></i>Eventos</div><div><i></i>Demo</div>
+  </div>
+  <!-- En el perfil lo mas nuevo va arriba a la izquierda: publicando del 1 al 9, queda asi -->
+  <div class="grid">
+    <img src="post-09.png"><img src="post-08.png"><img src="post-07.png">
+    <img src="post-06.png"><img src="post-05.png"><img src="post-04.png">
+    <img src="post-03.png"><img src="post-02.png"><img src="post-01.png">
+  </div>
+  <div class="nota">Vista previa. El perfil muestra los posts recortados a 3:4; la publicación completa es 4:5.</div>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Relevo Radio · piezas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=block" rel="stylesheet">
+<style>
+  :root{
+    --canal:#07090B; --sup:#10151A; --linea:#1E272F; --hueso:#EEF3F6; --niebla:#8595A1;
+    --rojo:#FF4D3D; --ambar:#F2A93B; --azul:#5AAAFF; --verde:#3ECF6A;
+    --sans:"Archivo",system-ui,sans-serif; --mono:"JetBrains Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--canal);color:var(--hueso);font-family:var(--sans);overflow:hidden}
+  .pieza{display:none;position:relative;overflow:hidden;background:var(--canal)}
+  .pieza.on{display:block}
+  .post{width:1080px;height:1350px;padding:96px 92px 84px}
+  .avatar{width:1080px;height:1080px}
+  .logo{width:1600px;height:640px}
+
+  /* textura del canal: rejilla tenue y viñeta */
+  .tex::before{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(var(--linea) 1px,transparent 1px),linear-gradient(90deg,var(--linea) 1px,transparent 1px);
+    background-size:72px 72px;opacity:.32;mask-image:radial-gradient(ellipse at 50% 42%,#000 25%,transparent 75%)}
+  .tex::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 38%,transparent 42%,rgba(0,0,0,.7) 100%)}
+  .z{position:relative;z-index:2;height:100%;display:flex;flex-direction:column}
+
+  .top{display:flex;align-items:center;gap:18px}
+  .top svg{width:58px;height:58px}
+  .marca{font:800 25px var(--sans);letter-spacing:.2em}
+  .marca b{color:var(--rojo);font-weight:800}
+  .tag{margin-left:auto;font:700 19px var(--sans);letter-spacing:.16em;text-transform:uppercase;
+    padding:10px 18px;border:1.5px solid var(--linea);border-radius:999px;color:var(--niebla)}
+
+  .h{font:900 104px/.98 var(--sans);letter-spacing:-.035em}
+  .sub{font:500 40px/1.28 var(--sans);color:var(--niebla);margin-top:34px;letter-spacing:-.005em}
+  .dim{color:var(--niebla)} .rojo{color:var(--rojo)} .ambar{color:var(--ambar)} .azul{color:var(--azul)} .verde{color:var(--verde)}
+  .centro{margin-top:auto;margin-bottom:auto}
+
+  .pie{display:flex;align-items:center;margin-top:auto;padding-top:34px;border-top:1.5px solid var(--linea)}
+  .pie .url{font:500 24px var(--mono);color:var(--niebla)}
+  .pie .estados{margin-left:auto;display:flex;gap:10px}
+  .pie .estados i{width:14px;height:14px;border-radius:50%;display:block}
+  .pie .n{margin-left:24px;font:500 24px var(--mono);color:var(--niebla)}
+
+  .card{background:linear-gradient(180deg,#131a20,var(--sup));border:1.5px solid var(--linea);border-radius:26px}
+  .log{padding:40px 42px;font:500 29px/1.62 var(--mono)}
+  .log .l{white-space:nowrap}
+  .wave{display:flex;align-items:center;gap:10px}
+  .wave i{display:block;width:12px;border-radius:7px;background:currentColor}
+  .fila{display:flex;align-items:center;gap:28px;font:700 50px var(--sans);letter-spacing:-.02em;padding:26px 0;border-bottom:1.5px solid var(--linea)}
+  .fila:last-child{border-bottom:0}
+  .fila i{width:26px;height:26px;border-radius:50%;flex:none}
+</style>
+</head>
+<body>
+
+<!-- ============================================================ AVATAR -->
+<div class="pieza avatar tex" data-p="avatar">
+  <div class="z" style="align-items:center;justify-content:center">
+    <div data-simbolo style="width:560px;height:560px"></div>
+  </div>
+</div>
+
+<!-- ============================================================ LOGO -->
+<div class="pieza logo" data-p="logo">
+  <div style="height:100%;display:flex;align-items:center;justify-content:center;gap:56px">
+    <div data-simbolo style="width:300px;height:300px"></div>
+    <div>
+      <div style="font:900 214px/.82 var(--sans);letter-spacing:-.055em">relevo</div>
+      <div style="font:800 58px var(--sans);letter-spacing:.62em;color:var(--rojo);margin-top:26px;padding-left:8px">RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ 1 · PROBLEMA -->
+<div class="pieza post tex" data-p="p1">
+  <div class="z">
+    <div class="top" data-top></div>
+    <div class="centro">
+      <div class="wave rojo" id="w1" style="height:190px;margin-bottom:70px"></div>
+      <div class="h">La radio de trabajo<br>no tiene <span class="rojo">memoria.</span></div>
+      <div class="sub">Lo que se dice por radio se evapora<br>en el instante en que sueltas el botón.</div>
+    </div>
+    <div class="pie" data-pie="01"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 2 · QUÉ ES -->
+<div class="pieza post tex" data-p="p2">
+  <div class="z">
+    <div class="top" data-top></div>
+    <div class="centro">
+      <div class="h" style="font-size:108px">Un agente<br>dentro de tu<br>canal de <span class="azul">radio.</span></div>
+      <div style="margin-top:64px">
+        <div class="fila"><i style="background:var(--rojo)"></i>Escucha a todos</div>
+        <div class="fila"><i style="background:var(--ambar)"></i>Anota lo pendiente</div>
+        <div class="fila"><i style="background:var(--azul)"></i>Avisa por voz</div>
+        <div class="fila"><i style="background:var(--verde)"></i>Cierra lo resuelto</div>
+      </div>
+    </div>
+    <div class="pie" data-pie="02"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 3 · CÓMO SE VE -->
+<div class="pieza post tex" data-p="p3">
+  <div class="z">
+    <div class="top" data-top="Así funciona"></div>
+    <div class="centro">
+      <div class="h" style="font-size:92px">Así se ve un pendiente<br>que <span class="verde">no se pierde.</span></div>
+      <div class="card log" style="margin-top:62px;font-size:27px">
+        <div class="l"><span class="dim">06:04</span> <span style="color:var(--hueso)">&lt;torre 3&gt;</span> Necesito material<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;en el piso 8.</div>
+        <div class="l" style="margin-top:6px"><span class="dim">06:04</span> <span class="ambar">● pendiente abierto</span></div>
+        <div class="l" style="margin-top:18px"><span class="dim">06:05</span> <span class="azul" style="font-weight:700">RELEVO:</span> <span class="azul">Pendiente. Material<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;en el piso 8. Sin respuesta.</span></div>
+        <div class="l" style="margin-top:18px"><span class="dim">06:05</span> <span style="color:var(--hueso)">&lt;central&gt;</span> Ya va subiendo.</div>
+        <div class="l" style="margin-top:6px"><span class="dim">06:05</span> <span class="verde">● cerrado</span></div>
+      </div>
+    </div>
+    <div class="pie" data-pie="03"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 4 · SEGURIDAD -->
+<div class="pieza post tex" data-p="p4">
+  <div class="z">
+    <div class="top" data-top="Seguridad privada"></div>
+    <div class="centro">
+      <div class="h">Cada novedad<br>del turno queda<br>escrita.</div>
+      <div class="sub">Rondas, puestos y relevos de 12 horas,<br>sin depender de la memoria del guarda.</div>
+      <div class="card log" style="margin-top:56px;font-size:27px">
+        <div class="l"><span class="dim">02:14</span> <span style="color:var(--hueso)">&lt;puesto 2&gt;</span> Portón norte sin candado.</div>
+        <div class="l"><span class="dim">02:14</span> <span class="ambar">● novedad registrada</span></div>
+        <div class="l" style="margin-top:14px"><span class="dim">02:31</span> <span style="color:var(--hueso)">&lt;supervisor&gt;</span> Ronda 3 completa.</div>
+      </div>
+    </div>
+    <div class="pie" data-pie="04"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 5 · OBRA -->
+<div class="pieza post tex" data-p="p5">
+  <div class="z">
+    <div class="top" data-top="Construcción"></div>
+    <div class="centro">
+      <div class="h" style="font-size:100px">Ninguna petición<br>se pierde entre<br>la grúa y el <span class="ambar">vaciado.</span></div>
+      <div style="margin-top:78px">
+        <div style="display:flex;height:88px;border-radius:16px;overflow:hidden;border:1.5px solid var(--linea)">
+          <div style="flex:3;background:rgba(255,77,61,.55);display:flex;align-items:center;padding-left:22px;font:800 24px var(--sans)">TORRE 3</div>
+          <div style="flex:2.2;background:rgba(255,77,61,.32);display:flex;align-items:center;padding-left:22px;font:800 24px var(--sans)">GRÚA</div>
+          <div style="flex:1.4;background:#0b0f12"></div>
+          <div style="flex:2.6;background:rgba(90,170,255,.62);display:flex;align-items:center;padding-left:22px;font:900 24px var(--sans)">RELEVO</div>
+        </div>
+        <div style="margin-top:22px;font:500 28px var(--mono)" class="dim">El canal siguió. Relevo no se olvidó.</div>
+      </div>
+    </div>
+    <div class="pie" data-pie="05"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 6 · EVENTOS -->
+<div class="pieza post tex" data-p="p6">
+  <div class="z">
+    <div class="top" data-top="Eventos"></div>
+    <div class="centro">
+      <div id="voces" style="display:grid;grid-template-columns:repeat(24,1fr);gap:10px;height:250px;align-items:end;margin-bottom:76px"></div>
+      <div class="h">Cientos de voces<br>en el canal.<br><span class="ambar">Alguien lleva<br>la cuenta.</span></div>
+    </div>
+    <div class="pie" data-pie="06"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 7 · RELEVO DE TURNO -->
+<div class="pieza post tex" data-p="p7">
+  <div class="z">
+    <div class="top" data-top="Cambio de turno"></div>
+    <div class="centro">
+      <div style="display:flex;align-items:baseline;gap:26px">
+        <div style="font:900 210px/.85 var(--sans);letter-spacing:-.06em">8 h</div>
+        <div style="font:700 44px/1.15 var(--sans)" class="dim">de operación</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:26px;margin-top:10px">
+        <div style="font:900 210px/.85 var(--sans);letter-spacing:-.06em" class="dim">2 min</div>
+        <div style="font:700 44px/1.15 var(--sans)" class="dim">de relevo</div>
+      </div>
+      <div class="card log" style="margin-top:66px;font-size:29px">
+        <div class="l"><span style="color:var(--hueso)">&lt;central&gt;</span> Relevo, relevo de turno.</div>
+        <div class="l azul" style="margin-top:14px">RELEVO: Abierto 1. Arnés de la cuadrilla 2.</div>
+        <div class="l azul">RELEVO: Abierto 2. Acero de tres octavos.</div>
+      </div>
+      <div class="sub" style="color:var(--hueso);font-weight:700">Ya no de memoria.</div>
+    </div>
+    <div class="pie" data-pie="07"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 8 · PRIVACIDAD Y CONTROL -->
+<div class="pieza post tex" data-p="p8">
+  <div class="z">
+    <div class="top" data-top="Privacidad"></div>
+    <div class="centro">
+      <div class="h" style="font-size:118px">Nadie analiza<br>tu voz.</div>
+      <div class="sub">Quién habla lo firma la red de radio.<br>Relevo no guarda el audio.</div>
+      <div class="card" style="margin-top:70px;padding:48px 50px;border-left:6px solid var(--rojo)">
+        <div style="font:700 26px var(--sans);letter-spacing:.14em" class="dim">Y SI MOLESTA, CUALQUIERA DICE</div>
+        <div style="font:900 84px/1.05 var(--sans);letter-spacing:-.03em;margin-top:18px" class="rojo">“Relevo, silencio.”</div>
+      </div>
+    </div>
+    <div class="pie" data-pie="08"></div>
+  </div>
+</div>
+
+<!-- ============================================================ 9 · CTA -->
+<div class="pieza post tex" data-p="p9">
+  <div class="z">
+    <div class="top" data-top></div>
+    <div class="centro">
+      <div data-simbolo style="width:170px;height:170px;margin-bottom:64px"></div>
+      <div class="h" style="font-size:112px">¿Tu operación<br>habla por radio?</div>
+      <div class="sub">Pilotos en seguridad privada,<br>construcción y eventos.</div>
+      <div style="margin-top:64px;display:inline-flex;align-items:center;gap:22px;background:var(--rojo);color:#fff;border-radius:999px;padding:30px 50px;font:900 44px var(--sans);letter-spacing:-.01em">
+        Escríbenos <span style="font-weight:600">→ relevoradio.com</span>
+      </div>
+    </div>
+    <div class="pie" data-pie="09"></div>
+  </div>
+</div>
+
+<script>
+  const simbolo = (anillo = '#EEF3F6', punto = '#FF4D3D') => `
+    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">
+      <path d="M103.30 35 A50 50 0 1 1 35 16.70" fill="none" stroke="${anillo}" stroke-width="9" stroke-linecap="round" opacity=".5"/>
+      <path d="M34.02 75 A30 30 0 1 1 75 85.98" fill="none" stroke="${anillo}" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="60" cy="60" r="13" fill="${punto}"/>
+    </svg>`;
+
+  document.querySelectorAll('[data-simbolo]').forEach((el) => (el.innerHTML = simbolo()));
+  document.querySelectorAll('[data-top]').forEach((el) => {
+    const tag = el.dataset.top;
+    // El simbolo va dentro de una caja de tamano fijo: su SVG trae width:100% en linea, que le
+    // gana a cualquier regla de CSS, y sin la caja se estiraba hasta llenar el encabezado.
+    el.innerHTML = `<div style="width:58px;height:58px;flex:none">${simbolo()}</div><div class="marca">RELEVO <b>RADIO</b></div>${tag ? `<div class="tag">${tag}</div>` : ''}`;
+  });
+  document.querySelectorAll('[data-pie]').forEach((el) => {
+    el.innerHTML = `<div class="url">relevoradio.com</div>
+      <div class="estados"><i style="background:var(--rojo)"></i><i style="background:var(--ambar)"></i><i style="background:var(--azul)"></i><i style="background:var(--verde)"></i></div>
+      <div class="n">${el.dataset.pie}/09</div>`;
+  });
+
+  // Ondas y voces deterministas: cada render sale igual.
+  let s = 17;
+  const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  const w1 = document.getElementById('w1');
+  for (let i = 0; i < 64; i++) {
+    const b = document.createElement('i');
+    const env = Math.max(0.04, 1 - i / 64);
+    b.style.height = Math.max(8, (0.3 + r() * 0.7) * 190 * env) + 'px';
+    b.style.opacity = Math.max(0.12, env).toFixed(2);
+    w1.appendChild(b);
+  }
+  const voces = document.getElementById('voces');
+  for (let i = 0; i < 24; i++) {
+    const b = document.createElement('div');
+    const destacada = i === 15;
+    b.style.cssText = `height:${Math.round((0.25 + r() * 0.75) * 250)}px;border-radius:8px;background:${destacada ? 'var(--ambar)' : 'rgba(238,243,246,.18)'}`;
+    if (destacada) b.style.height = '250px';
+    voces.appendChild(b);
+  }
+
+  const id = (location.hash.slice(1) || 'p1');
+  document.querySelector(`[data-p="${id}"]`)?.classList.add('on');
+  document.fonts.ready.then(() => document.body.setAttribute('data-listo', '1'));
+</script>
+</body>
+</html>
