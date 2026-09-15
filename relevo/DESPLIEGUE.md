@@ -39,10 +39,13 @@ Todos los comandos se corren en la carpeta `relevo/`.
 Crea la cuenta en [fly.io](https://fly.io) (pide tarjeta). Luego instala la herramienta:
 
 ```powershell
-pwsh -Command "iwr https://fly.io/install.ps1 -useb | iex"
+powershell -Command "iwr https://fly.io/install.ps1 -useb | iex"
 ```
 
-Si `pwsh` no existe, usa `powershell` en su lugar. Cierra y abre la terminal, y entra:
+(La documentación de Fly usa `pwsh`, que es PowerShell 7 y no viene con Windows. `powershell` es
+el que sí está.)
+
+Cierra y abre la terminal, y entra:
 
 ```powershell
 fly auth login
